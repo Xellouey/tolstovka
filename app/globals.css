@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #ffc81a;
+  --brandText: #383b3d;
+  --brandWhite: #ffffff;
+}
+
+html, body, #__next {
+  height: 100%;
+}
+body {
+  color: var(--brandText);
+  background: var(--brand);
+}
+
+/* Safe area for iOS notch */
+.main-safe-area {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Scroll snap for banners */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+}
+.snap-center {
+  scroll-snap-align: center;
+}
+
+/* Utility for aspect ratio banners */
+.banner-box {
+  aspect-ratio: 5 / 2; /* 2.5:1 рекомендованное соотношение */
+}
