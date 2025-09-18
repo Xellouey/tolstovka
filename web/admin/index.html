@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>TOLSOVKA — Админ</title>
+    <style>
+      :root { --bg: #ffc81a; --fg: #383b3d; --white: #ffffff; }
+      html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; }
+      .wrap { padding: 24px; }
+      .card { background: var(--white); border-radius: 12px; padding: 16px; }
+      input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; }
+      button { width: 100%; padding: 12px; border: 0; background: var(--fg); color: var(--white); border-radius: 8px; font-weight: 700; }
+      .row { display: flex; gap: 8px; }
+      .row > * { flex: 1; }
+      .list { margin-top: 16px; }
+      .item { background: #fff; border-radius: 10px; padding: 10px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+      .item .name { font-weight: 600; }
+      .muted { font-size: 12px; opacity: 0.7; }
+      .actions button { width: auto; padding: 8px 10px; margin-left: 6px; }
+      .hidden { display: none; }
+      .thumbWrap { position: relative; display: inline-block; }
+      .thumbWrap img { display: block; }
+      .thumbWrap .del { position: absolute; top: -6px; right: -6px; background: #e33; color: #fff; border: 0; border-radius: 50%; width: 20px; height: 20px; font-weight: 800; line-height: 20px; text-align: center; }
+      .thumbWrap .cover { position: absolute; bottom: -6px; left: -6px; background: #383b3d; color: #fff; border: 0; border-radius: 50%; width: 20px; height: 20px; font-weight: 800; line-height: 20px; text-align: center; }
+      .bannerPrev { height: 40px; width: auto; border-radius: 6px; margin-right: 8px; }
+      .editArea { margin-top: 8px; display: grid; grid-template-columns: 1fr; gap: 6px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h2>Вход в админку</h2>
+      <div class="card" id="loginCard">
+        <input placeholder="Логин" id="loginUser" />
+        <input placeholder="Пароль" type="password" id="loginPass" />
+        <button id="loginBtn">Войти</button>
+      </div>
+
+      <div class="card hidden" id="catsCard">
+        <div class="row">
+          <input placeholder="Новая категория" id="catName" />
+          <button id="addCat">Добавить</button>
+        </div>
+        <div class="muted">Порядок категорий можно менять кнопками ↑/↓</div>
+        <div class="list" id="catList"></div>
+      </div>
+
+      <div class="card hidden" id="bannersCard" style="margin-top:16px;">
+        <h3>Баннеры</h3>
+        <div class="row">
+          <input placeholder="Ссылка (опционально)" id="bannerHref" />
+        </div>
+        <div class="row">
+          <input type="file" id="bannerFile" accept="image/*" />
+          <button id="addBanner">Добавить баннер</button>
+        </div>
+        <div class="list" id="bannerList"></div>
+      </div>
+
+      <div class="card hidden" id="productsCard" style="margin-top:16px;">
+        <h3>Товары</h3>
+        <div class="row">
+          <select id="prodCat"></select>
+        </div>
+        <div class="row">
+          <input placeholder="Название (необязательно)" id="prodTitle" />
+          <input placeholder="Цена, ₽" id="prodPrice" type="number" inputmode="numeric" />
+        </div>
+        <div class="row">
+          <input placeholder="Описание" id="prodDesc" />
+          <button id="createProd">Создать товар</button>
+        </div>
+        <div class="list" id="prodList"></div>
+      </div>
+
+      <div class="card hidden" id="settingsCard" style="margin-top:16px;">
+        <h3>Настройки</h3>
+        <input placeholder="Текущий пароль" type="password" id="curPass" />
+        <input placeholder="Новый пароль" type="password" id="newPass" />
+        <input placeholder="Повторите новый пароль" type="password" id="newPass2" />
+        <button id="changePass">Сменить пароль</button>
+      </div>
+    </div>
+
+    <script>
+      async function api(path, opts={}) {
+        const r = await fetch(path, { method: opts.method || 'GET', headers: { 'Content-Type': 'application/json' }, body: opts.body ? JSON.stringify(opts.body) : undefined });
+        const t = await r.text();
+        let json = null; try { json = JSON.parse(t); } catch (e) {}
+        if (!r.ok) throw new Error(json && json.error || r.status);
+        return json;
+      }
+
+      async function login() {
+        const username = document.getElementById('loginUser').value.trim();
+        const password = document.getElementById('loginPass').value;
+        await api('/api/admin/login', { method: 'POST', body: { username, password } });
+        document.getElementById('loginCard').classList.add('hidden');
+        document.getElementById('catsCard').classList.remove('hidden');
+        document.getElementById('bannersCard').classList.remove('hidden');
+        document.getElementById('productsCard').classList.remove('hidden');
+        document.getElementById('settingsCard').classList.remove('hidden');
+        await loadCategories();
+        await loadBanners();
+        await loadProducts();
+        await fillProdCatSelect();
+      }
+
+      let CATS = [];
+      async function loadCategories() {
+        const cats = await api('/api/categories');
+        CATS = cats;
+        const list = document.getElementById('catList');
+        list.innerHTML = '';
+        cats.forEach((c, idx) => {
+          const el = document.createElement('div'); el.className = 'item';
+          el.setAttribute('draggable', 'true');
+          el.dataset.idx = String(idx);
+          el.innerHTML = `<div class=\"name\">${c.name}</div><div class=\"actions\">
+            <button data-act=\"up\">↑</button>
+            <button data-act=\"down\">↓</button>
+            <button data-act=\"del\">Удалить</button>
+          </div>`;
+          el.addEventListener('dragstart', (ev) => { ev.dataTransfer.effectAllowed = 'move'; el.classList.add('dragging'); });
+          el.addEventListener('dragend', () => { el.classList.remove('dragging'); });
+          el.querySelector('[data-act=\"up\"]').onclick = () => reorder(cats, idx, -1);
+          el.querySelector('[data-act=\"down\"]').onclick = () => reorder(cats, idx, +1);
+          el.querySelector('[data-act=\"del\"]').onclick = async () => { await api('/api/admin/categories/' + c.id, { method: 'DELETE' }); loadCategories(); };
+          list.appendChild(el);
+        });
+        let dragIdxCat = null;
+        list.addEventListener('dragstart', (ev) => {
+          const target = ev.target.closest('.item');
+          if (target) dragIdxCat = Number(target.dataset.idx);
+        });
+        list.addEventListener('dragover', (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; });
+        list.addEventListener('drop', async (ev) => {
+          ev.preventDefault();
+          const target = ev.target.closest('.item');
+          if (!target) return;
+          const dropIdx = Number(target.dataset.idx);
+          if (!Number.isInteger(dragIdxCat) || !Number.isInteger(dropIdx) || dragIdxCat === dropIdx) return;
+          const arr = cats.slice();
+          const [moved] = arr.splice(dragIdxCat, 1);
+          arr.splice(dropIdx, 0, moved);
+          const payload = arr.map((c, i) => ({ id: c.id, order: i * 10 }));
+          await api('/api/admin/categories/reorder', { method: 'PATCH', body: { items: payload } });
+          loadCategories();
+        });
+      }
+
+      async function reorder(cats, idx, delta) {
+        const j = idx + delta;
+        if (j < 0 || j >= cats.length) return;
+        // swap order values
+        const a = cats[idx]; const b = cats[j];
+        const payload = cats.map((c, k) => ({ id: c.id, order: k === idx ? b.order : (k === j ? a.order : c.order) }));
+        await api('/api/admin/categories/reorder', { method: 'PATCH', body: { items: payload } });
+        loadCategories();
+      }
+
+      document.getElementById('loginBtn').onclick = login;
+      document.getElementById('addCat').onclick = async () => {
+        const name = document.getElementById('catName').value.trim();
+        if (!name) return;
+        await api('/api/admin/categories', { method: 'POST', body: { name } });
+        document.getElementById('catName').value = '';
+        loadCategories();
+      };
+
+      async function loadBanners() {
+        const list = document.getElementById('bannerList');
+        list.innerHTML = '';
+        const banners = await api('/api/admin/banners');
+        banners.forEach((b, idx) => {
+          const el = document.createElement('div'); el.className = 'item';
+          el.setAttribute('draggable', 'true');
+          el.dataset.idx = String(idx);
+          el.innerHTML = `<div style=\"display:flex; align-items:center; gap:8px;\"><img class=\"bannerPrev\" src=\"${b.image}\" alt=\"\" /><div><div class=\"name\">${b.image}</div><div class=\"muted\">${b.href || ''}</div></div></div>
+            <div class=\"actions\">
+              <button data-act="up">↑</button>
+              <button data-act="down">↓</button>
+              <button data-act=\"toggle\">${b.active ? 'Выключить' : 'Включить'}</button>
+              <button data-act=\"href\">Ссылка</button>
+              <button data-act=\"replace\">Заменить</button>
+              <button data-act=\"del\">Удалить</button>
+            </div>`;
+          el.querySelector('[data-act="up"]').onclick = () => reorderBanners(banners, idx, -1);
+          el.querySelector('[data-act="down"]').onclick = () => reorderBanners(banners, idx, +1);
+          el.querySelector('[data-act="toggle"]').onclick = async () => { await api('/api/admin/banners/' + b.id, { method: 'PATCH', body: { active: b.active ? 0 : 1 } }); loadBanners(); };
+          el.querySelector('[data-act="href"]').onclick = async () => {
+            const href = prompt('Введите ссылку (может быть внутренний маршрут /category/... или внешний URL):', b.href || '');
+            if (href === null) return;
+            await api('/api/admin/banners/' + b.id, { method: 'PATCH', body: { href } });
+            loadBanners();
+          };
+          el.querySelector('[data-act=\"del\"]').onclick = async () => { await api('/api/admin/banners/' + b.id, { method: 'DELETE' }); loadBanners(); };
+          el.querySelector('[data-act=\"replace\"]').onclick = async () => {
+            const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/*';
+            input.onchange = async () => {
+              if (!input.files || input.files.length === 0) return;
+              const fd = new FormData(); fd.append('files', input.files[0]);
+              const r = await fetch('/api/admin/upload?target=banners', { method: 'POST', body: fd });
+              const payload = await r.json();
+              if (!payload.urls || payload.urls.length === 0) return;
+              await api('/api/admin/banners/' + b.id, { method: 'PATCH', body: { image: payload.urls[0] } });
+              loadBanners();
+            };
+            input.click();
+          };
+          list.appendChild(el);
+        });
+      }
+
+      async function reorderBanners(arr, idx, delta) {
+        const j = idx + delta;
+        if (j < 0 || j >= arr.length) return;
+        const a = arr[idx]; const b = arr[j];
+        const payload = arr.map((x, k) => ({ id: x.id, order: k === idx ? b.order : (k === j ? a.order : x.order) }));
+        await api('/api/admin/banners/reorder', { method: 'PATCH', body: { items: payload } });
+        loadBanners();
+      }
+
+      document.getElementById('addBanner').onclick = async () => {
+        const fileInput = document.getElementById('bannerFile');
+        const href = document.getElementById('bannerHref').value.trim();
+        if (!fileInput.files || fileInput.files.length === 0) return;
+        const fd = new FormData();
+        for (const f of fileInput.files) fd.append('files', f);
+        const r = await fetch('/api/admin/upload?target=banners', { method: 'POST', body: fd });
+        const payload = await r.json();
+        if (!payload || !payload.urls || payload.urls.length === 0) return;
+        await api('/api/admin/banners', { method: 'POST', body: { image: payload.urls[0], href, active: 1 } });
+        document.getElementById('bannerHref').value = '';
+        fileInput.value = '';
+        loadBanners();
+      };
+
+      async function fillProdCatSelect() {
+        const cats = await api('/api/categories');
+        const sel = document.getElementById('prodCat');
+        sel.innerHTML = '';
+        cats.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id; opt.textContent = c.name; sel.appendChild(opt);
+        });
+      }
+
+      document.getElementById('createProd').onclick = async () => {
+        const categoryId = document.getElementById('prodCat').value;
+        const title = document.getElementById('prodTitle').value.trim();
+        const priceRub = Number(document.getElementById('prodPrice').value);
+        const description = document.getElementById('prodDesc').value.trim();
+        if (!categoryId || !Number.isFinite(priceRub)) return;
+        await api('/api/admin/products', { method: 'POST', body: { categoryId, title, priceRub, description } });
+        document.getElementById('prodTitle').value = '';
+        document.getElementById('prodPrice').value = '';
+        document.getElementById('prodDesc').value = '';
+        loadProducts();
+      };
+
+      document.getElementById('changePass').onclick = async () => {
+        const currentPassword = document.getElementById('curPass').value;
+        const newPassword = document.getElementById('newPass').value;
+        const newPassword2 = document.getElementById('newPass2').value;
+        if (!newPassword || newPassword !== newPassword2) {
+          alert('Пароли не совпадают');
+          return;
+        }
+        try {
+          await api('/api/admin/password', { method: 'POST', body: { currentPassword, newPassword } });
+          document.getElementById('curPass').value = '';
+          document.getElementById('newPass').value = '';
+          document.getElementById('newPass2').value = '';
+          alert('Пароль изменён');
+        } catch (e) {
+          alert('Ошибка: проверьте текущий пароль');
+        }
+      };
+
+      async function loadProducts() {
+        const list = document.getElementById('prodList');
+        list.innerHTML = '';
+        const prods = await api('/api/products');
+        prods.forEach(p => {
+          const el = document.createElement('div'); el.className = 'item';
+          const images = Array.isArray(p.images) ? p.images : [];
+          el.innerHTML = `<div style=\"flex:1\">
+            <div class=\"name\">${p.title || p.id} — ${p.priceRub} ₽</div>
+            <div class=\"muted\">${p.id}</div>
+            <div class=\"thumbs\" style=\"margin-top:8px; display:flex; gap:6px; overflow-x:auto;\">${images.map((u,i) => `<span class=\"thumbWrap\"><img src=\"${u}\" draggable=\"true\" data-idx=\"${i}\" style=\"height:48px; border-radius:6px;\" /><button title=\"Сделать обложкой\" class=\"cover\" data-url=\"${u}\">★</button><button class=\"del\" data-url=\"${u}\">×</button></span>`).join('')}</div>
+            <div class=\"editArea hidden\">
+              <div class=\"row\"><input id=\"t_${p.id}\" placeholder=\"Название\" value=\"${(p.title||'').replace(/"/g,'&quot;')}\" /></div>
+              <div class=\"row\"><select id=\"c_${p.id}\"></select></div>
+              <div class=\"row\"><input id=\"d_${p.id}\" placeholder=\"Описание\" value=\"${(p.description||'').replace(/"/g,'&quot;')}\" /></div>
+              <div class=\"row\"><button data-act=\"save\">Сохранить</button></div>
+            </div>
+          </div>
+          <div class=\"actions\">
+            <button data-act=\"editPrice\">Цена</button>
+            <button data-act=\"editToggle\">Редакт</button>
+            <button data-act=\"upload\">Фото</button>
+            <button data-act=\"reorder\">Порядок</button>
+            <a href=\"/p/${p.id}\" target=\"_blank\" style=\"text-decoration:none\"><button>Открыть</button></a>
+            <button data-act=\"del\">Удалить</button>
+          </div>`;
+          el.querySelector('[data-act=\"editPrice\"]').onclick = async () => {
+            const val = prompt('Новая цена, ₽', String(p.priceRub));
+            if (val === null) return;
+            const priceRub = Number(val);
+            if (!Number.isFinite(priceRub)) return;
+            await api('/api/admin/products/' + p.id, { method: 'PATCH', body: { priceRub } });
+            loadProducts();
+          };
+          el.querySelector('[data-act=\"editToggle\"]').onclick = () => {
+            const area = el.querySelector('.editArea');
+            area.classList.toggle('hidden');
+            // заполнить селект категорий
+            const sel = el.querySelector('#c_' + p.id);
+            sel.innerHTML = '';
+            CATS.forEach(c => {
+              const opt = document.createElement('option');
+              opt.value = c.id; opt.textContent = c.name; if (c.id === p.categoryId) opt.selected = true; sel.appendChild(opt);
+            });
+          };
+          el.querySelector('[data-act=\"save\"]').onclick = async () => {
+            const title = el.querySelector('#t_' + p.id).value.trim();
+            const description = el.querySelector('#d_' + p.id).value.trim();
+            const categoryId = el.querySelector('#c_' + p.id).value;
+            await api('/api/admin/products/' + p.id, { method: 'PATCH', body: { title, description, categoryId } });
+            loadProducts();
+          };
+          el.querySelector('[data-act="upload"]').onclick = async () => {
+            const input = document.createElement('input'); input.type = 'file'; input.multiple = true; input.accept = 'image/*';
+            input.onchange = async () => {
+              if (!input.files || input.files.length === 0) return;
+              const fd = new FormData();
+              for (const f of input.files) fd.append('files', f);
+              const r = await fetch('/api/admin/upload?target=' + encodeURIComponent('products/' + p.id), { method: 'POST', body: fd });
+              const payload = await r.json();
+              await api('/api/admin/products/' + p.id + '/images/attach', { method: 'POST', body: { urls: payload.urls || [] } });
+              loadProducts();
+            };
+            input.click();
+          };
+          // Drag & drop reorder for images
+          const thumbs = el.querySelector('.thumbs');
+          // set cover image (make first)
+          thumbs.querySelectorAll('.cover').forEach(btn => {
+            btn.addEventListener('click', async (ev) => {
+              ev.preventDefault(); ev.stopPropagation();
+              const url = btn.getAttribute('data-url');
+              const urls = images.slice();
+              const idx = urls.indexOf(url);
+              if (idx > 0) {
+                urls.splice(idx,1);
+                urls.unshift(url);
+                await api('/api/admin/products/' + p.id + '/images/reorder', { method: 'PATCH', body: { urls } });
+                loadProducts();
+              }
+            });
+          });
+
+          // delete an image
+          thumbs.querySelectorAll('.del').forEach(btn => {
+            btn.addEventListener('click', async (ev) => {
+              ev.preventDefault(); ev.stopPropagation();
+              const url = btn.getAttribute('data-url');
+              if (!confirm('Удалить это фото?')) return;
+              await api('/api/admin/products/' + p.id + '/images', { method: 'DELETE', body: { url } });
+              loadProducts();
+            });
+          });
+
+          let dragIdx = null;
+          thumbs.addEventListener('dragstart', (ev) => {
+            const t = ev.target;
+            if (t && t.tagName === 'IMG') {
+              dragIdx = Number(t.dataset.idx);
+              ev.dataTransfer.effectAllowed = 'move';
+            }
+          });
+          thumbs.addEventListener('dragover', (ev) => { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; });
+          thumbs.addEventListener('drop', async (ev) => {
+            ev.preventDefault();
+            const t = ev.target;
+            if (t && t.tagName === 'IMG') {
+              const dropIdx = Number(t.dataset.idx);
+              if (Number.isInteger(dragIdx) && Number.isInteger(dropIdx) && dragIdx !== dropIdx) {
+                const urls = images.slice();
+                const [moved] = urls.splice(dragIdx, 1);
+                urls.splice(dropIdx, 0, moved);
+                await api('/api/admin/products/' + p.id + '/images/reorder', { method: 'PATCH', body: { urls } });
+                loadProducts();
+              }
+            }
+          });
+
+          el.querySelector('[data-act=\"reorder\"]').onclick = async () => {
+            // simple prompt-based reorder: comma-separated indexes
+            const urls = images.slice();
+            if (urls.length <= 1) return;
+            const hint = urls.map((u,i)=>`${i+1}:${u.split('/').pop()}`).join('\n');
+            const ord = prompt('Введите новый порядок через запятую индексов (например: 2,1,3)\n' + hint, urls.map((_,i)=>i+1).join(','));
+            if (ord === null) return;
+            const idxs = ord.split(',').map(s=>Number(s.trim())-1).filter(n=>Number.isInteger(n)&&n>=0&&n<urls.length);
+            if (idxs.length !== urls.length) return;
+            const reordered = idxs.map(i=>urls[i]);
+            await api('/api/admin/products/' + p.id + '/images/reorder', { method: 'PATCH', body: { urls: reordered } });
+            loadProducts();
+          };
+          el.querySelector('[data-act="del"]').onclick = async () => {
+            if (!confirm('Удалить товар?')) return;
+            await api('/api/admin/products/' + p.id, { method: 'DELETE' });
+            loadProducts();
+          };
+          list.appendChild(el);
+        });
+      }
+    </script>
+  </body>
+</html>

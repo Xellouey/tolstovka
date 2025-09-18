@@ -4,106 +4,53 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Обзор
 
-Этот репозиторий содержит графические материалы бренда (логотипы, мокапы, круговые печати, QR‑коды для Telegram/VK, ценники, фото примерочной) и набор шрифтов. Исходного кода, сборочных конфигураций и тестов нет.
+Проект «TOLSOVKA» — Telegram Mini App с приоритетом mobile-first (десктоп-верстка не требуется) и бэкендом на VPS. В репозитории присутствуют ассеты (папка DESIGN) и кодовая структура сервера и веб-заглушек.
 
 Ключевые директории (высокоуровнево):
-- DESIGN/Circle_Stamp/Circle_Stamp — исходники круговой печати (cdr, eps, jpg, pdf). Имеется глубокая вложенность с папками, названными числами.
-- DESIGN/Fonts/Fonts — шрифты (otf/ttf).
-- DESIGN/Logotype/Logotype — логотипы и мокапы.
-- Price_Tsenniki/Price_Tsenniki — материалы ценников (cdr/pdf/jpg).
-- Primerochnaya/Primerochnaya — фотографии (jpg/tif).
-- Rezhim_Raboty/Rezhim_Raboty — афиши/режим работы (ai/eps/jpg).
-- Telegram_Tolstovka/Telegram_Tolstovka и VK_Tolstovka/VK_Tolstovka — QR‑коды (png/eps).
-
-На момент создания этого файла в репозитории не обнаружены: README.md, WARP.md, CLAUDE.md, Cursor rules (.cursor/rules/, .cursorrules), Copilot rules (.github/copilot-instructions.md), а также конфигурации сборки/линтинга/тестов.
+- server — серверная часть (Express, Telegraf, SQLite, загрузки).
+- web — статика Mini App и админки (заглушки для начала).
+- uploads — каталог для изображений товаров/баннеров на VPS (раздаётся напрямую Nginx и сервером).
+- ops — инфраструктурные файлы (пример nginx.conf).
+- DESIGN — исходные графические материалы (логотипы, шрифты и пр.).
 
 ## Команды (Windows PowerShell)
 
-Так как это репозиторий ассетов без кода, ниже приведены команды для поиска, анализа и конвертации файлов.
-
-- Обзор ассетов по расширениям:
+- Установка зависимостей сервера:
 
 ```powershell
-Get-ChildItem -Recurse -File |
-  Group-Object Extension |
-  Sort-Object Count -Descending |
-  Format-Table -Auto
+npm install --prefix server
 ```
 
-- Топ самых крупных файлов:
+- Запуск сервера (по умолчанию на :8080):
 
 ```powershell
-Get-ChildItem -Recurse -File |
-  Sort-Object Length -Descending |
-  Select-Object -First 20 @{Name='SizeMB';Expression={[math]::Round($_.Length/1MB,2)}}, FullName
+$env:PORT=8080; $env:BASE_URL='https://tolsovka.vercel.app'; npm --prefix server run dev
 ```
 
-- Поиск файлов по типам:
+- Переменные окружения: скопируйте server/.env.example в server/.env и заполните значения (PORT, BASE_URL, SESSION_SECRET, DATABASE_FILE, ADMIN_CONFIG, BOT_TOKEN, MANAGER_USERNAME).
+
+- Запуск бота (если задан BOT_TOKEN):
 
 ```powershell
-Get-ChildItem -Recurse -File -Include *.cdr,*.eps,*.ai,*.pdf,*.jpg,*.png,*.tif
+node server/bot.js
 ```
 
-### Конвертация и предпросмотры
-
-- EPS → PNG (требуется ImageMagick; на Windows команда `magick`):
+- Проверка здоровья API:
 
 ```powershell
-magick -density 300 "input.eps" -background none -resize 2000x -strip "output.png"
+Invoke-WebRequest http://localhost:8080/api/health | Select-Object -ExpandProperty Content
 ```
 
-- Первая страница PDF → PNG (белый фон):
+## Архитектура (big picture)
 
-```powershell
-magick -density 300 "input.pdf[0]" -background white -flatten -resize 2000x -strip "output.png"
-```
+- Mini App: mobile-first, открывается из Telegram по web_app; главная с баннерами (12:5), выбор категорий над лентой, сетка карточек 3:4, карточка товара с галереей и кнопкой «Купить» (модалка: @dmitriy_mityuk + копирование /p/{id}).
+- Бот: /start с Inline («О нас», «Доставка», «Обратная связь», «Назад»), нижняя кнопка «Каталог» (web_app) открывает главную Mini App.
+- Сервер: Express на VPS, статика из /web и /uploads, API для категорий/товаров/баннеров, админка на /admin.
+- Данные/медиа: SQLite для сущностей, файлы изображений на диске VPS (/uploads). Seed-файлы категорий/товаров лежат в server/seed, тестовые картинки в uploads/seed.
+- Инфраструктура: Nginx (TLS) проксирует трафик на сервер; /uploads отдаётся напрямую.
 
-- Пакетная генерация PNG‑превью для всех EPS в репозитории в папку `previews/`:
+## Заметки по разработке
 
-```powershell
-New-Item -ItemType Directory -Path ".\previews" -Force | Out-Null
-Get-ChildItem -Recurse -File -Include *.eps | ForEach-Object {
-  $out = Join-Path ".\previews" ($_.BaseName + ".png")
-  magick -density 300 $_.FullName -background none -resize 2000x -strip $out
-}
-```
-
-- Конвертация EPS/AI/CDR → PDF через Inkscape (если установлен; импорт CDR зависит от версии Inkscape):
-
-```powershell
-inkscape "input.eps" --export-type=pdf --export-filename="output.pdf"
-inkscape "input.ai"  --export-type=pdf --export-filename="output.pdf"
-inkscape "input.cdr" --export-type=pdf --export-filename="output.pdf"
-```
-
-- Метаданные (если установлен `exiftool`):
-
-```powershell
-exiftool "path\to\file"
-```
-
-- Поиск возможных дубликатов по размеру:
-
-```powershell
-Get-ChildItem -Recurse -File |
-  Group-Object Length |
-  Where-Object Count -gt 1 |
-  Sort-Object Count -Descending |
-  Select-Object -First 20 Count, @{N='SizeMB';E={[math]::Round($_.Name/1MB,2)}}
-```
-
-### Установка инструментов (по желанию)
-
-Если необходимо, можно установить утилиты через winget:
-
-```powershell
-winget install --id ImageMagick.ImageMagick -e
-winget install --id Inkscape.Inkscape -e
-winget install --id PhilHarvey.ExifTool -e
-```
-
-## Рекомендации для Warp
-
-- В проекте нет сборки, линта и тестов — на запросы об их запуске отвечайте, что они не применимы к данному репозиторию.
-- Предлагайте операции с ассетами: поиск и группировка, генерация предпросмотров, конвертация форматов, извлечение метаданных.
-- Учитывайте глубокую вложенность в `DESIGN/Circle_Stamp/Circle_Stamp` и потенциальные повторяющиеся имена файлов при пакетных операциях.
+- Mobile-first: ориентируйтесь на Telegram WebApp (десктоп-верстка не требуется).
+- Секреты (токен бота и пр.) всегда через переменные окружения, не коммитить.
+- Для сидов: изображения для p_seed_01/02/03 уже скопированы в uploads/seed; при необходимости заменить на другие.

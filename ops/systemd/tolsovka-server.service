@@ -1,0 +1,16 @@
+[Unit]
+Description=TOLSOVKA Mini App Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/tolsovka/server
+ExecStart=/usr/bin/node index.js
+Restart=always
+EnvironmentFile=/var/www/tolsovka/server/.env
+# Параметры безопасности по желанию
+# User=www-data
+# Group=www-data
+
+[Install]
+WantedBy=multi-user.target

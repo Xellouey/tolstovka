@@ -1,0 +1,26 @@
+[
+  {
+    "id": "p_seed_01",
+    "categoryId": "c_jackets",
+    "title": "Пиджак Seed",
+    "priceRub": 4990,
+    "description": "Заглушка описания товара. 100% хлопок.",
+    "images": ["/uploads/seed/p_seed_01.jpg"]
+  },
+  {
+    "id": "p_seed_02",
+    "categoryId": "c_jeans",
+    "title": "Джинсы Seed",
+    "priceRub": 3990,
+    "description": "Заглушка описания товара. Деним.",
+    "images": ["/uploads/seed/p_seed_02.jpg"]
+  },
+  {
+    "id": "p_seed_03",
+    "categoryId": "c_coats",
+    "title": "Куртка Seed",
+    "priceRub": 7990,
+    "description": "Заглушка описания товара. Утеплённая.",
+    "images": ["/uploads/seed/p_seed_03.png"]
+  }
+]

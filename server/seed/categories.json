@@ -1,0 +1,5 @@
+[
+  { "id": "c_jackets", "slug": "pidzhaki", "name": "Пиджаки", "order": 10 },
+  { "id": "c_jeans",   "slug": "dzhinsy",  "name": "Джинсы",  "order": 20 },
+  { "id": "c_coats",   "slug": "kurtki",   "name": "Куртки",  "order": 30 }
+]
