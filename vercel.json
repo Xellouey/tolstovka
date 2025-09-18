@@ -1,0 +1,14 @@
+{
+  "buildCommand": "echo 'No build required'",
+  "outputDirectory": "web",
+  "rewrites": [
+    { "source": "/api/product/:id", "destination": "/api/product?id=:id" },
+    { "source": "/p/(.*)", "destination": "/index.html" },
+    { "source": "/category/(.*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 10
+    }
+  }
+}

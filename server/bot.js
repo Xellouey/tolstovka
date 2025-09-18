@@ -15,25 +15,34 @@ if (!BOT_TOKEN) {
         [Markup.button.callback('Обратная связь', 'contact')],
       ]);
 
-      // Reply Keyboard with web_app button "Каталог"
       const webAppUrl = process.env.BASE_URL || 'https://tolsovka.vercel.app';
-      const replyKbd = {
-        keyboard: [
-          [
-            {
-              text: 'Каталог',
-              web_app: { url: webAppUrl },
-            },
-          ],
-        ],
-        resize_keyboard: true,
-        is_persistent: true,
-      };
+      const isHttps = /^https:\/\//i.test(webAppUrl);
 
-      await ctx.reply(
-        'Добро пожаловать в TOLSOVKA! Выберите раздел или откройте Каталог снизу.',
-        { reply_markup: replyKbd }
-      );
+      let replyKbd;
+      if (isHttps) {
+        // WebApp доступен только по HTTPS — делаем кнопку снизу
+        replyKbd = {
+          keyboard: [[{ text: 'Каталог', web_app: { url: webAppUrl } }]],
+          resize_keyboard: true,
+          is_persistent: true,
+        };
+      } else {
+        // Локальная разработка без HTTPS: показываем обычную клавиатуру и отдельную inline‑кнопку со ссылкой
+        replyKbd = {
+          keyboard: [[{ text: 'Каталог' }]],
+          resize_keyboard: true,
+          is_persistent: true,
+        };
+      }
+
+      await ctx.reply('Добро пожаловать в TOLSOVKA! Выберите раздел или откройте Каталог снизу.', { reply_markup: replyKbd });
+
+      if (!isHttps) {
+        await ctx.reply('Для локального запуска без HTTPS используйте кнопку ниже (откроется во внешнем браузере):',
+          Markup.inlineKeyboard([[Markup.button.url('Открыть каталог (локально)', webAppUrl)]])
+        );
+      }
+
       await ctx.reply('Навигация:', kb);
     } catch (e) {
       console.error(e);
