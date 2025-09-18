@@ -1,6 +1,8 @@
 {
-  "buildCommand": "echo 'No build required'",
+  "framework": null,
+  "buildCommand": "echo 'Static site - no build required'",
   "outputDirectory": "web",
+  "installCommand": "echo 'No dependencies to install'",
   "rewrites": [
     { "source": "/api/product/:id", "destination": "/api/product?id=:id" },
     { "source": "/p/(.*)", "destination": "/index.html" },

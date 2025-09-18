@@ -1,9 +1,0 @@
-{
-  "name": "tolsovka",
-  "private": true,
-  "scripts": {
-    "server": "npm --prefix server run dev",
-    "bot": "npm --prefix server run start:bot",
-    "dev": "npm --prefix server run start:bot"
-  }
-}
