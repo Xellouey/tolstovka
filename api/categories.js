@@ -1,9 +1,5 @@
-// Mock data for categories - в production можно использовать внешнюю БД
-const categories = [
-  { id: "c_jackets", slug: "pidzhaki", name: "Пиджаки", order: 10 },
-  { id: "c_jeans", slug: "dzhinsy", name: "Джинсы", order: 20 },
-  { id: "c_coats", slug: "kurtki", name: "Куртки", order: 30 }
-];
+import fs from 'fs';
+import path from 'path';
 
 export default function handler(req, res) {
   // CORS headers для Telegram Mini App
@@ -21,5 +17,13 @@ export default function handler(req, res) {
     return;
   }
 
-  res.status(200).json(categories);
+  try {
+    const categoriesPath = path.join(process.cwd(), 'server', 'seed', 'categories.json');
+    const raw = fs.readFileSync(categoriesPath, 'utf8');
+    const cats = JSON.parse(raw);
+    cats.sort((a,b) => (a.order||0) - (b.order||0) || a.name.localeCompare(b.name));
+    res.status(200).json(cats);
+  } catch (e) {
+    res.status(200).json([]);
+  }
 }

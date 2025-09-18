@@ -1,9 +1,10 @@
-// Получение одного товара по id
-const allProducts = [
-  { id: "p_001", categoryId: "c_jackets", title: "Классический пиджак", priceRub: 5900, description: "Элегантный пиджак из качественной шерсти", images: ["/uploads/demo/jacket1.jpg"], createdAt: "2024-01-01T12:00:00Z" },
-  { id: "p_002", categoryId: "c_jeans", title: "Джинсы прямые", priceRub: 3500, description: "Классические джинсы прямого кроя", images: ["/uploads/demo/jeans1.jpg"], createdAt: "2024-01-02T12:00:00Z" },
-  { id: "p_003", categoryId: "c_coats", title: "Куртка демисезонная", priceRub: 7800, description: "Легкая куртка для весны и осени", images: ["/uploads/demo/coat1.jpg"], createdAt: "2024-01-03T12:00:00Z" }
-];
+import fs from 'fs';
+import path from 'path';
+
+function toPlaceholderUrl(title, i = 0) {
+  const text = encodeURIComponent((title || 'TOLSOVKA') + (i ? ` #${i+1}` : ''));
+  return `https://placehold.co/600x800/png?text=${text}`;
+}
 
 export default function handler(req, res) {
   // CORS headers
@@ -22,11 +23,19 @@ export default function handler(req, res) {
     return;
   }
 
-  const product = allProducts.find(p => p.id === id);
-  if (!product) {
+  try {
+    const prodsPath = path.join(process.cwd(), 'server', 'seed', 'products.json');
+    const prods = JSON.parse(fs.readFileSync(prodsPath, 'utf8'));
+    const p = Array.isArray(prods) ? prods.find(x => String(x.id) === String(id)) : null;
+    if (!p) {
+      res.status(404).json({ error: 'not_found' });
+      return;
+    }
+    const imgs = Array.isArray(p.images) && p.images.length
+      ? p.images.map((_, i) => toPlaceholderUrl(p.title, i))
+      : [toPlaceholderUrl(p.title)];
+    res.status(200).json({ ...p, images: imgs });
+  } catch (e) {
     res.status(404).json({ error: 'not_found' });
-    return;
   }
-
-  res.status(200).json(product);
 }

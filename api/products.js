@@ -1,39 +1,10 @@
-// Mock data for products - в production можно использовать внешнюю БД
-const products = [
-  {
-    id: "p_001",
-    categoryId: "c_jackets",
-    title: "Классический пиджак",
-    priceRub: 5900,
-    description: "Элегантный пиджак из качественной шерсти",
-    images: ["/uploads/demo/jacket1.jpg"],
-    createdAt: "2024-01-01T12:00:00Z"
-  },
-  {
-    id: "p_002",
-    categoryId: "c_jeans",
-    title: "Джинсы прямые",
-    priceRub: 3500,
-    description: "Классические джинсы прямого кроя",
-    images: ["/uploads/demo/jeans1.jpg"],
-    createdAt: "2024-01-02T12:00:00Z"
-  },
-  {
-    id: "p_003",
-    categoryId: "c_coats",
-    title: "Куртка демисезонная",
-    priceRub: 7800,
-    description: "Легкая куртка для весны и осени",
-    images: ["/uploads/demo/coat1.jpg"],
-    createdAt: "2024-01-03T12:00:00Z"
-  }
-];
+import fs from 'fs';
+import path from 'path';
 
-const categories = {
-  "pidzhaki": "c_jackets",
-  "dzhinsy": "c_jeans",
-  "kurtki": "c_coats"
-};
+function toPlaceholderUrl(title, i = 0) {
+  const text = encodeURIComponent((title || 'TOLSOVKA') + (i ? ` #${i+1}` : ''));
+  return `https://placehold.co/600x800/png?text=${text}`;
+}
 
 export default function handler(req, res) {
   // CORS headers
@@ -51,26 +22,36 @@ export default function handler(req, res) {
     return;
   }
 
-  let filteredProducts = [...products];
+  try {
+    const catsPath = path.join(process.cwd(), 'server', 'seed', 'categories.json');
+    const prodsPath = path.join(process.cwd(), 'server', 'seed', 'products.json');
+    const cats = JSON.parse(fs.readFileSync(catsPath, 'utf8'));
+    const prods = JSON.parse(fs.readFileSync(prodsPath, 'utf8'));
 
-  // Filter by category
-  const { category, sort } = req.query;
-  if (category) {
-    const categoryId = categories[category];
-    if (categoryId) {
-      filteredProducts = filteredProducts.filter(p => p.categoryId === categoryId);
-    } else {
-      res.status(200).json([]);
-      return;
+    const slugToId = Object.fromEntries(cats.map(c => [String(c.slug), String(c.id)]));
+
+    const { category, sort } = req.query;
+    let list = Array.isArray(prods) ? [...prods] : [];
+
+    if (category) {
+      const categoryId = slugToId[String(category)] || null;
+      if (categoryId) list = list.filter(p => String(p.categoryId) === categoryId);
+      else list = [];
     }
-  }
 
-  // Sort products
-  if (sort === 'price_desc') {
-    filteredProducts.sort((a, b) => b.priceRub - a.priceRub);
-  } else {
-    filteredProducts.sort((a, b) => a.priceRub - b.priceRub);
-  }
+    // Images -> placeholders
+    list = list.map(p => {
+      const imgs = Array.isArray(p.images) && p.images.length
+        ? p.images.map((_, i) => toPlaceholderUrl(p.title, i))
+        : [toPlaceholderUrl(p.title)];
+      return { ...p, images: imgs };
+    });
 
-  res.status(200).json(filteredProducts);
+    if (sort === 'price_desc') list.sort((a,b) => Number(b.priceRub)-Number(a.priceRub));
+    else list.sort((a,b) => Number(a.priceRub)-Number(b.priceRub));
+
+    res.status(200).json(list);
+  } catch (e) {
+    res.status(200).json([]);
+  }
 }

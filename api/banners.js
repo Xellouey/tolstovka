@@ -1,14 +1,3 @@
-// Mock data for banners
-const banners = [
-  {
-    id: "b_001",
-    image: "/uploads/demo/banner1.jpg",
-    href: null,
-    active: 1,
-    order: 1
-  }
-];
-
 export default function handler(req, res) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,5 +14,14 @@ export default function handler(req, res) {
     return;
   }
 
+  const banners = [
+    {
+      id: 'b_placeholder_01',
+      image: 'https://placehold.co/1200x500/png?text=TOLSOVKA',
+      href: null,
+      active: 1,
+      order: 1
+    }
+  ];
   res.status(200).json(banners);
 }
