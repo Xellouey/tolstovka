@@ -96,4 +96,21 @@ function seedIfEmpty() {
       console.log(`[tolsovka:db] Seeded products: ${products.length}`);
     }
   }
+
+  // Seed banners
+  const countBanners = db.prepare('SELECT COUNT(*) as c FROM banners').get().c;
+  if (countBanners === 0) {
+    const bannersPath = path.resolve(__dirname, './seed/banners.json');
+    if (fs.existsSync(bannersPath)) {
+      const banners = JSON.parse(fs.readFileSync(bannersPath, 'utf8'));
+      const stmt = db.prepare('INSERT INTO banners (id, image, href, active, [order]) VALUES (?, ?, ?, ?, ?)');
+      const tx = db.transaction((rows) => {
+        for (const b of rows) {
+          stmt.run(b.id, b.image, b.href || null, b.active ? 1 : 0, b.order || 0);
+        }
+      });
+      tx(banners);
+      console.log(`[tolsovka:db] Seeded banners: ${banners.length}`);
+    }
+  }
 }

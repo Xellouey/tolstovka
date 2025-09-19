@@ -78,8 +78,9 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Initialize database
-initDb();
+// Initialize database and attach to fastify
+const db = initDb();
+fastify.decorate('db', db);
 
 // Health check
 fastify.get('/api/health', async () => {
@@ -92,9 +93,9 @@ fastify.get('/api/health', async () => {
 });
 
 // Import routes
-const { publicRoutes } = await import('./routes/public-fastify.js');
-const { adminRoutes } = await import('./routes/admin-fastify.js');
-const { uploadRoutes } = await import('./routes/upload-fastify.js');
+const publicRoutes = (await import('./routes/public-fastify.js')).default;
+const adminRoutes = (await import('./routes/admin-fastify.js')).default;
+const uploadRoutes = (await import('./routes/upload-fastify.js')).default;
 
 // Register routes
 await fastify.register(publicRoutes, { prefix: '/api' });

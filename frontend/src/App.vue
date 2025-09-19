@@ -1,47 +1,54 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
+import { onMounted } from 'vue'
+
+// Telegram WebApp initialization
+onMounted(() => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp
+    tg.ready()
+    tg.expand()
+    
+    // Apply Telegram theme colors
+    document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff')
+    document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000')
+    document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#999999')
+    document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#2678b6')
+    document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2678b6')
+    document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff')
+  }
+})
 </script>
 
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
+  <div id="app" class="min-h-screen bg-brand-primary text-brand-dark">
+    <RouterView />
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
+<style>
+:root {
+  --tg-theme-bg-color: #ffffff;
+  --tg-theme-text-color: #000000;
+  --tg-theme-hint-color: #999999;
+  --tg-theme-link-color: #2678b6;
+  --tg-theme-button-color: #2678b6;
+  --tg-theme-button-text-color: #ffffff;
 }
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
+* {
+  box-sizing: border-box;
 }
 
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--tg-theme-bg-color);
+  color: var(--tg-theme-text-color);
+}
 
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
+#app {
+  width: 100%;
+  min-height: 100vh;
 }
 </style>

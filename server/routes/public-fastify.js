@@ -1,6 +1,6 @@
 import { db } from '../db.js';
 
-export async function publicRoutes(fastify) {
+export default async function publicRoutes(fastify) {
   // Cache for categories (refresh every 5 minutes)
   let categoriesCache = null;
   let categoriesCacheTime = 0;

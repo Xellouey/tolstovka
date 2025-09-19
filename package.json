@@ -14,8 +14,7 @@
     "start:bot": "npm --prefix server run start:bot",
     "test": "npm --prefix frontend run test:unit && npm --prefix server run test",
     "lint": "npm --prefix frontend run lint && npm --prefix server run lint",
-    "format": "prettier --write \"**/*.{js,ts,vue,json,md}\"",
-    "prepare": "cd server && npm install && cd ../frontend && npm install"
+    "format": "prettier --write \"**/*.{js,ts,vue,json,md}\""
   },
   "devDependencies": {
     "prettier": "^3.1.1"

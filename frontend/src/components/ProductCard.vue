@@ -43,7 +43,7 @@
         v-if="isNew"
         class="absolute top-3 left-3 bg-brand-accent text-white rounded-lg px-2 py-1"
       >
-        <span class="font-medium text-xs uppercase tracking-wide">New</span>
+        <span class="font-medium text-xs uppercase tracking-wide">Новинка</span>
       </div>
     </div>
 

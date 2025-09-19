@@ -1,27 +1,20 @@
 import { defineConfig, presetUno, presetTypography, transformerDirectives } from 'unocss'
-import { presetWebFonts } from '@unocss/preset-web-fonts'
 
 export default defineConfig({
   presets: [
     presetUno(),
-    presetTypography(),
-    presetWebFonts({
-      fonts: {
-        sans: ['Inter:300,400,500,600,700,800', 'system-ui', 'sans-serif'],
-        mono: ['Fira Code', 'monospace']
-      }
-    })
+    presetTypography()
   ],
   transformers: [transformerDirectives()],
   theme: {
     colors: {
-      // TOLSOVKA brand colors
+      // TOLSTOVKA brand colors
       brand: {
-        primary: '#ffc81a',
-        dark: '#383b3d',
-        white: '#ffffff',
+        primary: '#ffc81a',    // желтый фон
+        dark: '#383b3d',       // основной/текст
+        white: '#ffffff',      // белый
         muted: '#e8e8e8',
-        accent: '#ff3b30'
+        accent: '#ffc81a'      // акцент тоже желтый
       },
       // Telegram theme colors (will be overridden by CSS variables)
       tg: {
@@ -54,14 +47,28 @@ export default defineConfig({
       'safe-right': 'env(safe-area-inset-right)'
     },
     aspectRatio: {
-      'banner': '12/5',
-      'product': '3/4',
+      'banner': '12/5',      // баннеры 12:5
+      'product': '3/4',      // карточки товаров 3:4  
       'square': '1/1'
     },
     animation: {
       'fade-in': 'fade-in 0.3s ease-out',
       'slide-up': 'slide-up 0.3s ease-out',
       'skeleton': 'skeleton 1s ease-in-out infinite alternate'
+    },
+    keyframes: {
+      'fade-in': {
+        '0%': { opacity: '0' },
+        '100%': { opacity: '1' }
+      },
+      'slide-up': {
+        '0%': { transform: 'translateY(20px)', opacity: '0' },
+        '100%': { transform: 'translateY(0)', opacity: '1' }
+      },
+      'skeleton': {
+        '0%': { opacity: '0.4' },
+        '100%': { opacity: '1' }
+      }
     }
   },
   shortcuts: {
@@ -81,11 +88,11 @@ export default defineConfig({
     'card-hover': 'card-base hover:shadow-lg hover:-translate-y-1 transition-all duration-300',
     
     // Product card
-    'product-card': 'card-hover overflow-hidden aspect-product',
+    'product-card': 'card-hover overflow-hidden aspect-[3/4]',
     'product-image': 'w-full h-full object-cover',
     
     // Skeleton loading
-    'skeleton-base': 'bg-gray-200 animate-skeleton rounded',
+    'skeleton-base': 'bg-gray-200 animate-pulse rounded',
     
     // Telegram safe area
     'safe-area': 'pb-safe-bottom pt-safe-top pl-safe-left pr-safe-right'
