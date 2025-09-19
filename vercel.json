@@ -13,15 +13,9 @@
     { "source": "/cart", "destination": "/index.html" }
   ],
   "functions": {
-    "server/routes/public-fastify.js": {
-      "runtime": "@vercel/node",
-      "maxDuration": 10,
-      "includeFiles": "server/seed/*.json"
-    },
-    "server/routes/admin-fastify.js": {
-      "runtime": "@vercel/node",
-      "maxDuration": 10,
-      "includeFiles": "server/seed/*.json"
+    "api/**/*.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 10
     }
   },
   "env": {
