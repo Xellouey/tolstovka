@@ -1,17 +1,30 @@
 {
+  "version": 2,
   "framework": null,
-  "buildCommand": "echo 'Static site - no build required'",
-  "outputDirectory": "web",
-  "installCommand": "echo 'No dependencies to install'",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "cd frontend && npm install",
   "rewrites": [
-    { "source": "/api/product/:id", "destination": "/api/product?id=:id" },
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/admin", "destination": "/index.html" },
     { "source": "/p/(.*)", "destination": "/index.html" },
-    { "source": "/category/(.*)", "destination": "/index.html" }
+    { "source": "/category/(.*)", "destination": "/index.html" },
+    { "source": "/profile", "destination": "/index.html" },
+    { "source": "/cart", "destination": "/index.html" }
   ],
   "functions": {
-    "api/*.js": {
+    "server/routes/public-fastify.js": {
+      "runtime": "@vercel/node",
+      "maxDuration": 10,
+      "includeFiles": "server/seed/*.json"
+    },
+    "server/routes/admin-fastify.js": {
+      "runtime": "@vercel/node",
       "maxDuration": 10,
       "includeFiles": "server/seed/*.json"
     }
+  },
+  "env": {
+    "NODE_ENV": "production"
   }
 }

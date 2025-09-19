@@ -1,29 +1,30 @@
-import fs from 'fs';
-import path from 'path';
+import { initDb } from '../server/db.js';
+
+// Initialize database
+const db = initDb();
 
 export default function handler(req, res) {
-  // CORS headers для Telegram Mini App
+  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  if (req.method !== 'GET') {
+  if (req.method === 'GET') {
+    try {
+      const stmt = db.prepare('SELECT id, slug, name, [order] FROM categories ORDER BY [order] ASC, name ASC');
+      const categories = stmt.all();
+      
+      res.status(200).json(categories);
+    } catch (error) {
+      console.error('Database error in /api/categories:', error);
+      res.status(500).json({ error: 'Failed to fetch categories' });
+    }
+  } else {
     res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
-
-  try {
-    const categoriesPath = path.join(process.cwd(), 'server', 'seed', 'categories.json');
-    const raw = fs.readFileSync(categoriesPath, 'utf8');
-    const cats = JSON.parse(raw);
-    cats.sort((a,b) => (a.order||0) - (b.order||0) || a.name.localeCompare(b.name));
-    res.status(200).json(cats);
-  } catch (e) {
-    res.status(200).json([]);
   }
 }

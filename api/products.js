@@ -1,57 +1,83 @@
-import fs from 'fs';
-import path from 'path';
+import { initDb } from '../server/db.js';
 
-function toPlaceholderUrl(title, i = 0) {
-  const text = encodeURIComponent((title || 'TOLSOVKA') + (i ? ` #${i+1}` : ''));
-  return `https://placehold.co/600x800/png?text=${text}`;
-}
+// Initialize database
+const db = initDb();
 
 export default function handler(req, res) {
-  // CORS headers
+  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
     return;
   }
 
-  if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
-
-  try {
-    const catsPath = path.join(process.cwd(), 'server', 'seed', 'categories.json');
-    const prodsPath = path.join(process.cwd(), 'server', 'seed', 'products.json');
-    const cats = JSON.parse(fs.readFileSync(catsPath, 'utf8'));
-    const prods = JSON.parse(fs.readFileSync(prodsPath, 'utf8'));
-
-    const slugToId = Object.fromEntries(cats.map(c => [String(c.slug), String(c.id)]));
-
-    const { category, sort } = req.query;
-    let list = Array.isArray(prods) ? [...prods] : [];
-
-    if (category) {
-      const categoryId = slugToId[String(category)] || null;
-      if (categoryId) list = list.filter(p => String(p.categoryId) === categoryId);
-      else list = [];
+  if (req.method === 'GET') {
+    try {
+      const { category, sort = 'name', limit = 50, offset = 0 } = req.query;
+      
+      let whereClause = '';
+      let params = [];
+      
+      if (category && category !== 'all') {
+        // Get category by slug
+        const catStmt = db.prepare('SELECT id FROM categories WHERE slug = ?');
+        const cat = catStmt.get(category);
+        if (cat) {
+          whereClause = 'WHERE p.categoryId = ?';
+          params.push(cat.id);
+        }
+      }
+      
+      // Order clause
+      let orderBy = 'ORDER BY p.title ASC';
+      switch (sort) {
+        case 'price_asc':
+          orderBy = 'ORDER BY p.priceRub ASC';
+          break;
+        case 'price_desc':
+          orderBy = 'ORDER BY p.priceRub DESC';
+          break;
+        case 'newest':
+          orderBy = 'ORDER BY p.createdAt DESC';
+          break;
+        case 'oldest':
+          orderBy = 'ORDER BY p.createdAt ASC';
+          break;
+      }
+      
+      // Get products
+      const sql = `
+        SELECT p.id, p.categoryId, p.title, p.priceRub, p.description, p.createdAt
+        FROM products p
+        ${whereClause}
+        ${orderBy}
+        LIMIT ? OFFSET ?
+      `;
+      
+      const queryParams = [...params, parseInt(limit), parseInt(offset)];
+      const stmt = db.prepare(sql);
+      const products = stmt.all(...queryParams);
+      
+      // Get images for each product
+      const imgStmt = db.prepare('SELECT url FROM product_images WHERE productId = ? ORDER BY position ASC');
+      const enriched = products.map(product => ({
+        ...product,
+        images: imgStmt.all(product.id).map(img => img.url),
+        is_available: true, // For compatibility
+        name: product.title, // For compatibility
+        price: product.priceRub, // For compatibility
+        category_id: product.categoryId // For compatibility
+      }));
+      
+      res.status(200).json(enriched);
+    } catch (error) {
+      console.error('Database error in /api/products:', error);
+      res.status(500).json({ error: 'Failed to fetch products' });
     }
-
-    // Images -> placeholders
-    list = list.map(p => {
-      const imgs = Array.isArray(p.images) && p.images.length
-        ? p.images.map((_, i) => toPlaceholderUrl(p.title, i))
-        : [toPlaceholderUrl(p.title)];
-      return { ...p, images: imgs };
-    });
-
-    if (sort === 'price_desc') list.sort((a,b) => Number(b.priceRub)-Number(a.priceRub));
-    else list.sort((a,b) => Number(a.priceRub)-Number(b.priceRub));
-
-    res.status(200).json(list);
-  } catch (e) {
-    res.status(200).json([]);
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
   }
 }
