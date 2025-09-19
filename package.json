@@ -26,5 +26,9 @@
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@headlessui/vue": "^1.7.23",
+    "vee-validate": "^4.15.1"
   }
 }

@@ -10,16 +10,26 @@ const router = createRouter({
       component: HomeView
     },
     {
-      path: '/category/:id',
+      path: '/category/:slug',
       name: 'category',
       component: () => import('../views/CategoryView.vue'),
       props: true
     },
+    // Backward compatibility: treat /category/:id as slug
     {
-      path: '/product/:id',
+      path: '/category/:id',
+      redirect: to => ({ name: 'category', params: { slug: String(to.params.id) } })
+    },
+    {
+      path: '/p/:id',
       name: 'product',
       component: () => import('../views/ProductView.vue'),
       props: true
+    },
+    // Backward compatibility redirect
+    {
+      path: '/product/:id',
+      redirect: to => ({ name: 'product', params: to.params })
     },
     {
       path: '/cart',
@@ -33,8 +43,13 @@ const router = createRouter({
     },
     {
       path: '/admin',
-      name: 'admin',
-      component: () => import('../views/AdminView.vue')
+      name: 'Admin',
+      component: () => import('@/views/AdminView.vue')
+    },
+    {
+      path: '/test-admin',
+      name: 'TestAdmin',
+      component: () => import('@/views/TestAdminView.vue')
     },
     {
       path: '/:pathMatch(.*)*',

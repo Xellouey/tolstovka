@@ -21,36 +21,126 @@
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="flex flex-col items-center justify-center py-12 text-center">
+    <div v-else-if="error" class="flex flex-col items-center justify-center py-16 text-center px-6">
       <ExclamationTriangleIcon class="w-12 h-12 text-red-500 mb-4" />
-      <h2 class="text-lg font-semibold text-gray-900 mb-2">Product Not Found</h2>
-      <p class="text-gray-600 mb-4">{{ error }}</p>
-      <button @click="$router.go(-1)" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-        Go Back
-      </button>
+      <h2 class="text-xl font-semibold text-brand-dark mb-2">Товар не найден</h2>
+      <p class="text-brand-dark/70 mb-6">{{ error }}</p>
+      <router-link 
+        to="/"
+        class="px-4 py-2 bg-brand-dark text-white rounded-lg hover:bg-brand-dark/90 transition-colors"
+      >
+        На главную
+      </router-link>
     </div>
 
     <!-- Product Details -->
     <div v-else-if="product" class="pb-24">
-      <!-- Product Image -->
-      <div class="relative">
-        <img 
-          :src="product.image_url || `https://placehold.co/400x300/e5e7eb/6b7280?text=${encodeURIComponent(product.name)}`"
-          :alt="product.name"
-          class="w-full h-64 object-cover bg-gray-100"
-          @error="handleImageError"
-        />
-        <div v-if="!product.is_available" class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <span class="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-            Out of Stock
-          </span>
+      <!-- Product Gallery (Embla) -->
+      <div class="relative w-full aspect-[3/4] bg-gray-100">
+        <div 
+          class="embla overflow-hidden absolute inset-0"
+          ref="emblaRef"
+          @mouseenter="onEmblaMouseEnter"
+          @mouseleave="onEmblaMouseLeave"
+          @focusin="onEmblaMouseEnter"
+          @focusout="onEmblaMouseLeave"
+        >
+          <div class="embla__container flex h-full">
+            <div
+              v-for="(src, idx) in images"
+              :key="src + '-' + idx"
+              class="embla__slide min-w-full h-full bg-gray-100"
+            >
+              <img
+                :src="src"
+                :alt="product.title || 'Товар'"
+                class="w-full h-full object-cover"
+                loading="lazy"
+                @error="handleImageError"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Prev/Next controls -->
+        <button
+          v-if="images.length > 1"
+          type="button"
+          class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white"
+          @click="scrollPrev"
+          aria-label="Предыдущее изображение"
+        >
+          <ChevronLeftIcon class="w-6 h-6" />
+        </button>
+        <button
+          v-if="images.length > 1"
+          type="button"
+          class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white"
+          @click="scrollNext"
+          aria-label="Следующее изображение"
+        >
+          <ChevronRightIcon class="w-6 h-6" />
+        </button>
+
+        <!-- Dots -->
+        <div
+          v-if="images.length > 1"
+          class="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2"
+        >
+          <button
+            v-for="(src, idx) in images"
+            :key="'dot-' + idx"
+            class="h-2 rounded-full transition-all"
+            :style="{ width: idx === currentSlide ? '1.25rem' : '0.5rem' }"
+            :class="idx === currentSlide ? 'bg-white' : 'bg-white/60'"
+            @click="goToSlide(idx)"
+            :aria-label="`Перейти к изображению ${idx + 1}`"
+            :aria-current="idx === currentSlide ? 'true' : 'false'"
+          />
+        </div>
+
+        <!-- ARIA live region for screen readers -->
+        <div
+          aria-live="polite"
+          :aria-atomic="true"
+          style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"
+        >
+          {{ liveAnnouncement }}
+        </div>
+      </div>
+
+      <!-- Thumbnails -->
+      <div v-if="images.length > 1" class="px-4 mt-3">
+        <div class="flex gap-2 overflow-x-auto scrollbar-hide">
+          <button
+            v-for="(src, idx) in images"
+            :key="'thumb-' + idx"
+            class="relative flex-shrink-0 w-14 h-18 rounded-lg overflow-hidden border focus:outline-none focus:ring-2 focus:ring-brand-dark"
+            :class="idx === currentSlide ? 'border-brand-dark ring-2 ring-brand-dark' : 'border-gray-200'"
+            @click="goToSlide(idx)"
+            @keydown.enter.prevent="goToSlide(idx)"
+            @keydown.space.prevent="goToSlide(idx)"
+            :aria-label="`Показать изображение ${idx + 1}`"
+            :aria-pressed="idx === currentSlide ? 'true' : 'false'"
+            tabindex="0"
+          >
+            <img
+              :src="src"
+              :alt="product?.title || 'Товар'"
+              class="w-full h-full object-cover"
+              loading="lazy"
+              @load="markThumbLoaded(idx)"
+              @error="handleImageError"
+            />
+            <div v-if="!thumbLoaded[idx]" class="absolute inset-0 skeleton-base animate-pulse" />
+          </button>
         </div>
       </div>
 
       <!-- Product Info -->
       <div class="p-4">
         <div class="flex items-start justify-between mb-2">
-          <h1 class="text-xl font-bold text-gray-900 flex-1">{{ product.name }}</h1>
+          <h1 class="text-xl font-bold text-gray-900 flex-1">{{ product.title || 'Без названия' }}</h1>
           <span class="text-xl font-bold text-brand-dark ml-4">{{ formatPrice(product.priceRub) }}</span>
         </div>
 
@@ -58,21 +148,19 @@
           {{ product.description }}
         </p>
 
-        <!-- Category -->
-        <div class="flex items-center space-x-2 mb-4">
-          <TagIcon class="w-4 h-4 text-gray-400" />
-          <router-link 
-            v-if="category"
-            :to="`/category/${category.id}`"
-            class="text-sm text-blue-600 hover:underline"
-          >
-            {{ category.name }}
-          </router-link>
-        </div>
+        <!-- Category badge (clickable) -->
+        <router-link
+          v-if="category"
+          :to="{ name: 'category', params: { slug: category.slug } }"
+          class="inline-flex items-center space-x-2 mb-4 px-3 py-1 bg-white border border-gray-300 rounded-full text-sm text-brand-dark hover:border-brand-dark transition-colors"
+        >
+          <TagIcon class="w-4 h-4 text-gray-500" />
+          <span>{{ category.name }}</span>
+        </router-link>
 
         <!-- Quantity Selector -->
         <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Количество</label>
           <div class="flex items-center space-x-3">
             <button 
               @click="decreaseQuantity"
@@ -90,7 +178,7 @@
             </button>
           </div>
           <p class="text-sm text-gray-500 mt-1">
-            Total: ${{ (product.price * quantity).toFixed(2) }}
+            Итого: {{ formatPrice(product.priceRub * quantity) }}
           </p>
         </div>
 
@@ -98,12 +186,7 @@
         <div class="space-y-3 text-sm text-gray-600">
           <div class="flex items-center space-x-2">
             <ClockIcon class="w-4 h-4" />
-            <span>Added {{ formatDate(product.created_at) }}</span>
-          </div>
-          
-          <div v-if="product.is_available" class="flex items-center space-x-2">
-            <CheckCircleIcon class="w-4 h-4 text-green-500" />
-            <span class="text-green-600">Available now</span>
+            <span>Добавлен {{ formatDate(product.createdAt) }}</span>
           </div>
         </div>
       </div>
@@ -114,13 +197,7 @@
       <div class="flex space-x-3">
         <button
           @click="showPurchaseModal"
-          :disabled="!product.is_available"
-          :class="[
-            'flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2',
-            product.is_available
-              ? 'bg-brand-dark text-white hover:bg-brand-dark/90'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          ]"
+          class="flex-1 py-3 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 bg-brand-dark text-white hover:bg-brand-dark/90"
         >
           <ShoppingCartIcon class="w-5 h-5" />
           <span>Купить</span>
@@ -138,8 +215,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, onMounted, nextTick } from 'vue'
+import { onBeforeRouteUpdate } from 'vue-router'
+import emblaCarouselVue from 'embla-carousel-vue'
+import Autoplay from 'embla-carousel-autoplay'
 import { useCatalogStore } from '@/stores/catalog'
 import PurchaseModal from '@/components/PurchaseModal.vue'
 import { 
@@ -150,11 +229,13 @@ import {
   MinusIcon,
   PlusIcon,
   ClockIcon,
-  CheckCircleIcon,
-  ShoppingCartIcon
+  ShoppingCartIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/vue/24/outline'
 
-const route = useRoute()
+// Получаем id товара из props (props: true в маршруте)
+const props = defineProps<{ id: string }>()
 const catalogStore = useCatalogStore()
 
 const loading = ref(false)
@@ -163,13 +244,38 @@ const quantity = ref(1)
 const isFavorite = ref(false)
 const showModal = ref(false)
 
-const productId = computed(() => parseInt(route.params.id as string))
-const product = computed(() => 
-  catalogStore.products.find(p => p.id === productId.value)
+// Embla carousel
+const [emblaRef, emblaApi] = emblaCarouselVue(
+  { loop: true, align: 'center' },
+  [Autoplay({ delay: 4000, stopOnInteraction: false })]
 )
-const category = computed(() => 
-  product.value ? catalogStore.categories.find(cat => cat.id === product.value!.category_id) : null
-)
+const currentSlide = ref(0)
+
+const product = computed(() => {
+  // Предпочтительно показываем currentProduct, если id совпадает,
+  // иначе ищем в списке products
+  const cp = catalogStore.currentProduct
+  if (cp && cp.id === props.id) return cp
+  return catalogStore.products.find(p => p.id === props.id) || null
+})
+
+const category = computed(() => {
+  if (!product.value) return null
+  return catalogStore.categories.find(cat => cat.id === product.value!.categoryId) || null
+})
+
+const images = computed(() => product.value?.images ?? [])
+
+// Thumbnail skeleton load states
+const thumbLoaded = ref<boolean[]>([])
+
+function initThumbStates() {
+  thumbLoaded.value = images.value.map(() => false)
+}
+
+function markThumbLoaded(index: number) {
+  thumbLoaded.value[index] = true
+}
 
 const decreaseQuantity = () => {
   if (quantity.value > 1) quantity.value--
@@ -185,11 +291,9 @@ const toggleFavorite = () => {
 }
 
 const showPurchaseModal = () => {
-  if (!product.value || !product.value.is_available) return
-  
+  if (!product.value) return
   showModal.value = true
-  
-  // Trigger haptic feedback if in Telegram
+  // Haptic feedback in Telegram
   if (window.Telegram?.WebApp) {
     window.Telegram.WebApp.HapticFeedback.impactOccurred('medium')
   }
@@ -197,7 +301,31 @@ const showPurchaseModal = () => {
 
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement
-  target.src = `https://placehold.co/400x300/e5e7eb/6b7280?text=${encodeURIComponent(product.value?.name || 'Product')}`
+  target.src = `https://placehold.co/400x300/e5e7eb/6b7280?text=${encodeURIComponent(product.value?.title || 'Товар')}`
+}
+
+function goToSlide(index: number) {
+  emblaApi.value?.scrollTo(index)
+}
+
+function scrollPrev() {
+  emblaApi.value?.scrollPrev()
+}
+function scrollNext() {
+  emblaApi.value?.scrollNext()
+}
+
+function onSelect() {
+  const api = emblaApi.value
+  if (!api) return
+  currentSlide.value = api.selectedScrollSnap()
+}
+
+function onEmblaMouseEnter() {
+  try { emblaApi.value?.plugins()?.autoplay?.stop() } catch (_) {}
+}
+function onEmblaMouseLeave() {
+  try { emblaApi.value?.plugins()?.autoplay?.play() } catch (_) {}
 }
 
 function formatPrice(price: number): string {
@@ -210,40 +338,60 @@ const formatDate = (dateString: string) => {
   const diffTime = Math.abs(now.getTime() - date.getTime())
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   
-  if (diffDays === 1) return 'yesterday'
-  if (diffDays < 7) return `${diffDays} days ago`
-  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`
-  return date.toLocaleDateString()
+  if (diffDays === 1) return 'вчера'
+  if (diffDays < 7) return `${diffDays} дн. назад`
+  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} нед. назад`
+  return date.toLocaleDateString('ru-RU')
 }
 
-const loadProduct = async () => {
+const liveAnnouncement = computed(() => {
+  if (!images.value.length) return ''
+  return `Изображение ${currentSlide.value + 1} из ${images.value.length}`
+})
+
+const loadProduct = async (id: string) => {
   loading.value = true
   error.value = ''
-  
   try {
-    // Load products if not already loaded
-    if (catalogStore.products.length === 0) {
-      await catalogStore.fetchProducts()
-    }
-    
-    // Load categories if not already loaded
-    if (catalogStore.categories.length === 0) {
+    // Категории нужны для отображения названия категории
+    if (!catalogStore.categories.length) {
       await catalogStore.fetchCategories()
     }
-    
-    // Check if product exists
-    if (!product.value) {
-      error.value = 'Product not found'
-      return
+    // Если товара нет или id не совпадает — догрузим
+    if (!product.value || product.value.id !== id) {
+      await catalogStore.fetchProduct(id)
+    }
+    if (!catalogStore.currentProduct || catalogStore.currentProduct.id !== id) {
+      // Если и после запроса нет — отобразим ошибку
+      error.value = 'Товар не найден'
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to load product'
+    error.value = err instanceof Error ? err.message : 'Не удалось загрузить товар'
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  loadProduct()
+onMounted(async () => {
+  await loadProduct(props.id)
+  initThumbStates()
+  await nextTick()
+  const api = emblaApi.value
+  if (api) {
+    api.on('select', onSelect)
+    api.on('reInit', () => { onSelect(); initThumbStates() })
+    onSelect()
+  }
+})
+
+onBeforeRouteUpdate((to) => {
+  const id = to.params.id as string
+  showModal.value = false
+  loadProduct(id)
+  nextTick().then(() => {
+    currentSlide.value = 0
+    emblaApi.value?.scrollTo(0)
+    initThumbStates()
+  })
 })
 </script>

@@ -18,13 +18,31 @@
           TOLSOVKA
         </h1>
         
-        <!-- Search button -->
-        <button 
-          class="p-2 rounded-full hover:bg-brand-dark/10 transition-colors"
-          @click="toggleSearch"
-        >
-          <MagnifyingGlassIcon class="w-6 h-6 text-brand-dark" />
-        </button>
+        <!-- Admin & Search buttons -->
+        <div class="flex items-center space-x-2">
+          <router-link
+            to="/test-admin"
+            class="p-2 rounded-full hover:bg-brand-dark/10 transition-colors"
+            title="Тест админки"
+          >
+            <CogIcon class="w-5 h-5 text-brand-dark" />
+          </router-link>
+          
+          <router-link
+            to="/admin"
+            class="p-2 rounded-full hover:bg-brand-dark/10 transition-colors"
+            title="Админ-панель"
+          >
+            <UserIcon class="w-5 h-5 text-brand-dark" />
+          </router-link>
+          
+          <button 
+            class="p-2 rounded-full hover:bg-brand-dark/10 transition-colors"
+            @click="toggleSearch"
+          >
+            <MagnifyingGlassIcon class="w-6 h-6 text-brand-dark" />
+          </button>
+        </div>
       </div>
 
       <!-- Search bar -->
@@ -98,12 +116,12 @@
             :class="!catalogStore.activeCategory 
               ? 'bg-brand-dark text-white border-brand-dark' 
               : 'bg-white text-brand-dark border-gray-300 hover:border-brand-dark'"
-            @click="catalogStore.setActiveCategory(null)"
+            @click="goToAll()"
           >
             Все товары
           </button>
           
-          <!-- Category chips -->
+          <!-- Category chips (navigate) -->
           <button
             v-for="category in catalogStore.categories"
             :key="category.id"
@@ -111,7 +129,7 @@
             :class="catalogStore.activeCategory === category.slug
               ? 'bg-brand-dark text-white border-brand-dark' 
               : 'bg-white text-brand-dark border-gray-300 hover:border-brand-dark'"
-            @click="catalogStore.setActiveCategory(category.slug)"
+            @click="goToCategory(category.slug)"
           >
             {{ category.name }}
           </button>
@@ -235,7 +253,9 @@ import {
   XMarkIcon,
   ChevronDownIcon,
   ExclamationTriangleIcon,
-  ShoppingBagIcon
+  ShoppingBagIcon,
+  CogIcon,
+  UserIcon
 } from '@heroicons/vue/24/outline'
 
 import { useCatalogStore, type SortOption, type Product } from '@/stores/catalog'
@@ -286,7 +306,19 @@ function selectSort(sortOption: SortOption) {
 }
 
 function openProduct(product: Product) {
-  router.push(`/product/${product.id}`)
+  // Мгновенно показываем карточку, затем фоново догружаем с сервера
+  catalogStore.currentProduct = product
+  router.push({ name: 'product', params: { id: product.id } })
+  catalogStore.fetchProduct(product.id)
+}
+
+function goToAll() {
+  if (catalogStore.activeCategory) catalogStore.setActiveCategory(null)
+  router.push({ name: 'home' })
+}
+
+function goToCategory(slug: string) {
+  router.push({ name: 'category', params: { slug } })
 }
 
 function handleQuickAdd(product: Product) {
