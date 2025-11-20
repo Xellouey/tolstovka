@@ -17,6 +17,12 @@
           <span>{{ category.name }}</span>
         </router-link>
       </div>
+      
+      <!-- Size -->
+      <div v-if="product?.size" class="mt-2 flex items-center gap-2 text-sm text-gray-600">
+        <span class="font-medium">Размер:</span>
+        <span class="px-2 py-0.5 bg-gray-100 rounded text-brand-dark font-medium">{{ formatProductSizeLabel(product.size) }}</span>
+      </div>
 
       <!-- Description -->
       <div v-if="product?.description" class="mt-2">
@@ -32,6 +38,7 @@
 import {
   TagIcon
 } from '@heroicons/vue/24/outline'
+import { formatProductSizeLabel } from '@/constants/productSizes'
 
 interface Props {
   product: any

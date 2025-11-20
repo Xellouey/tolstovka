@@ -30,6 +30,7 @@
           Категории
         </h2>
         
+        <ProductSearch />
         <CategorySelector />
       </section>
 
@@ -41,9 +42,6 @@
             <h2 class="font-primary text-lg font-semibold text-brand-dark uppercase tracking-wide">
               {{ catalogStore.activeCategoryName }}
             </h2>
-            <span class="font-primary text-sm text-gray-500">
-              ({{ catalogStore.filteredProducts.length }})
-            </span>
           </div>
 
           <!-- Sort button -->
@@ -166,6 +164,7 @@ import { useCatalogStore, type SortOption, type Product } from '@/stores/catalog
 import BannerCarousel from '@/components/BannerCarousel.vue'
 import ProductCard from '@/components/ProductCard.vue'
 import CategorySelector from '@/components/CategorySelector.vue'
+import ProductSearch from '@/components/ProductSearch.vue'
 import SizeFilter from '@/components/SizeFilter.vue'
 
 const catalogStore = useCatalogStore()

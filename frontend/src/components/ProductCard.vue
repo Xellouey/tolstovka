@@ -176,14 +176,16 @@ function formatPrice(price: number): string {
 
 function onImageLoad(index: number) {
   loadedImages.value.add(index)
-  if (loadedImages.value.size === productImages.value.length) {
+  // Hide skeleton as soon as the first image is loaded
+  if (index === 0) {
     imagesLoaded.value = true
   }
 }
 
 function onImageError(index: number) {
   loadedImages.value.add(index)
-  if (loadedImages.value.size === productImages.value.length) {
+  // Hide skeleton even if first image fails
+  if (index === 0) {
     imagesLoaded.value = true
   }
 }

@@ -205,6 +205,12 @@
                     </router-link>
                   </div>
 
+                  <!-- Size -->
+                  <div v-if="product?.size" class="mb-6 flex items-center gap-2 text-gray-600 font-primary">
+                    <span class="font-medium">Размер:</span>
+                    <span class="px-2 py-1 bg-gray-100 rounded-md text-brand-dark font-semibold">{{ formatProductSizeLabel(product.size) }}</span>
+                  </div>
+
                   <!-- Price -->
                   <div class="mb-8 p-6 bg-gray-50 rounded-2xl">
                     <div class="flex items-center justify-between mb-4">
@@ -350,6 +356,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter, onBeforeRouteUpdate } from 'vue-router'
 import { useCatalogStore } from '@/stores/catalog'
 import { useCartStore } from '@/stores/cart'
+import { formatProductSizeLabel } from '@/constants/productSizes'
 
 // Import new components
 import ProductHero from '@/components/product/ProductHero.vue'

@@ -52,19 +52,19 @@ export const useCatalogStore = defineStore('catalog', () => {
   const allProducts = ref<Product[]>([]) // Store all products for category counts
   const banners = ref<Banner[]>([])
   const currentProduct = ref<Product | null>(null)
-  
+
   const activeCategory = ref<string | null>(null)
   const sortBy = ref<SortOption>('price_asc')
   const searchQuery = ref('')
   const activeSize = ref<string | null>(null)
   const sizePreset = ref<SizePreset>(getSizePresetForCategory(null))
-  
+
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  
+
   // Cart state
   const cart = ref<CartItem[]>([])
-  
+
   // Pagination
   const currentPage = ref(0)
   const itemsPerPage = ref(20)
@@ -74,19 +74,19 @@ export const useCatalogStore = defineStore('catalog', () => {
   // Computed
   const filteredProducts = computed(() => {
     let filtered = products.value
-    
+
     if (activeCategory.value) {
       const category = categories.value.find(c => c.slug === activeCategory.value)
       if (category) {
-        filtered = filtered.filter(p => p.categoryId === category.id)
+        filtered = filtered.filter(p => p.categoryId && String(p.categoryId) === String(category.id))
       }
     }
-    
+
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase()
-      filtered = filtered.filter(p => 
-        p.title.toLowerCase().includes(query) || 
-        p.description.toLowerCase().includes(query)
+      filtered = filtered.filter(p =>
+        (p.title || '').toLowerCase().includes(query) ||
+        (p.description || '').toLowerCase().includes(query)
       )
     }
 
@@ -94,7 +94,7 @@ export const useCatalogStore = defineStore('catalog', () => {
       const sizeToken = activeSize.value
       filtered = filtered.filter(p => (p.size ? p.size.toUpperCase() : '') === sizeToken)
     }
-    
+
     return filtered
   })
 
@@ -156,7 +156,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   const categoriesWithProductCounts = computed(() => {
     return categories.value.map(category => ({
       ...category,
-      productCount: allProducts.value.filter(p => p.categoryId === category.id).length
+      productCount: allProducts.value.filter(p => p.categoryId && String(p.categoryId) === String(category.id)).length
     }))
   })
 
@@ -176,14 +176,30 @@ export const useCatalogStore = defineStore('catalog', () => {
     }
   }
 
+  function normalizeProduct(p: any): Product {
+    return {
+      ...p,
+      id: String(p.id),
+      categoryId: String(p.categoryId || p.category_id || p.category?.id || ''),
+      priceRub: Number(p.priceRub || p.price || 0)
+    }
+  }
+
+  function normalizeCategory(c: any): Category {
+    return {
+      ...c,
+      id: String(c.id)
+    }
+  }
+
   // Actions
   async function fetchCategories() {
     try {
       const response = await fetch('/api/categories')
       if (!response.ok) throw new Error('Failed to fetch categories')
-      const data: Category[] = await response.json()
+      const data: any[] = await response.json()
       // show only sorted categories by order asc
-      const sorted = [...data].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+      const sorted = data.map(normalizeCategory).sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       categories.value = sorted
       updateSizePreset()
     } catch (err) {
@@ -194,38 +210,39 @@ export const useCatalogStore = defineStore('catalog', () => {
 
   async function fetchProducts(loadMore = false) {
     if (isLoading.value) return
-    
+
     try {
       isLoading.value = true
       error.value = null
-      
+
       const offset = loadMore ? currentPage.value * itemsPerPage.value : 0
       const params = new URLSearchParams({
         limit: itemsPerPage.value.toString(),
         offset: offset.toString(),
         sort: sortBy.value
       })
-      
+
       if (activeCategory.value) {
         params.set('category', activeCategory.value)
       }
-      
+
       const response = await fetch(`/api/products?${params}`)
       if (!response.ok) throw new Error('Failed to fetch products')
-      
+
       const data = await response.json()
-      
+      const normalizedProducts = (data.products || []).map(normalizeProduct)
+
       if (loadMore) {
-        products.value.push(...data.products)
+        products.value.push(...normalizedProducts)
         currentPage.value++
       } else {
-        products.value = data.products
-        currentPage.value = 0
+        products.value = normalizedProducts
+        currentPage.value = 1
       }
-      
+
       totalProducts.value = data.total
       hasMore.value = data.hasMore
-      
+
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Unknown error'
       console.error('Error fetching products:', err)
@@ -236,11 +253,36 @@ export const useCatalogStore = defineStore('catalog', () => {
 
   async function fetchAllProducts() {
     try {
-      // Fetch all products without pagination or category filter for counts
-      const response = await fetch('/api/products?limit=1000&offset=0')
-      if (!response.ok) throw new Error('Failed to fetch all products')
-      const data = await response.json()
-      allProducts.value = data.products
+      const limit = 100
+      let offset = 0
+      let hasMore = true
+      const allItems: Product[] = []
+
+      while (hasMore) {
+        const response = await fetch(`/api/products?limit=${limit}&offset=${offset}`)
+        if (!response.ok) throw new Error('Failed to fetch all products')
+
+        const data = await response.json()
+        const pageProducts = (data.products || []).map(normalizeProduct)
+
+        if (pageProducts.length === 0) {
+          hasMore = false
+        } else {
+          allItems.push(...pageProducts)
+          offset += limit
+          // If we received fewer items than the limit, we've reached the end
+          if (pageProducts.length < limit) {
+            hasMore = false
+          }
+          // Safety break to prevent infinite loops if API is misbehaving
+          if (offset > 10000) {
+            console.warn('fetchAllProducts reached safety limit of 10000 items')
+            hasMore = false
+          }
+        }
+      }
+
+      allProducts.value = allItems
       updateSizePreset()
     } catch (err) {
       console.error('Error fetching all products for counts:', err)
@@ -251,12 +293,13 @@ export const useCatalogStore = defineStore('catalog', () => {
     try {
       isLoading.value = true
       error.value = null
-      
+
       const response = await fetch(`/api/product/${id}`)
       if (!response.ok) throw new Error('Product not found')
-      
-      currentProduct.value = await response.json()
-      
+
+      const raw = await response.json()
+      currentProduct.value = normalizeProduct(raw)
+
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Unknown error'
       console.error('Error fetching product:', err)
@@ -298,19 +341,22 @@ export const useCatalogStore = defineStore('catalog', () => {
       await fetchProducts()
       return
     }
-    
+
     try {
       isLoading.value = true
       error.value = null
       searchQuery.value = query
-      
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&limit=50`)
-      if (!response.ok) throw new Error('Search failed')
-      
-      const data = await response.json()
-      products.value = data.results
+
+      // Client-side search since API might be missing
+      const lowerQuery = query.toLowerCase()
+      const results = allProducts.value.filter(p =>
+        (p.title || '').toLowerCase().includes(lowerQuery) ||
+        (p.description || '').toLowerCase().includes(lowerQuery)
+      )
+
+      products.value = results
       hasMore.value = false
-      
+
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Unknown error'
       console.error('Error searching products:', err)
@@ -370,7 +416,7 @@ export const useCatalogStore = defineStore('catalog', () => {
   function clearError() {
     error.value = null
   }
-  
+
   function clearCurrentProduct() {
     currentProduct.value = null
   }
@@ -383,13 +429,13 @@ export const useCatalogStore = defineStore('catalog', () => {
     } else {
       cart.value.push({ product: { ...product, is_available: true }, quantity })
     }
-    
+
     // Save to localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('cart', JSON.stringify(cart.value))
     }
   }
-  
+
   async function updateCartItem(productId: string, newQuantity: number) {
     const item = cart.value.find(item => item.product.id === productId)
     if (item) {
@@ -404,25 +450,25 @@ export const useCatalogStore = defineStore('catalog', () => {
       }
     }
   }
-  
+
   async function removeFromCart(productId: string) {
     cart.value = cart.value.filter(item => item.product.id !== productId)
-    
+
     // Save to localStorage
     if (typeof window !== 'undefined') {
       localStorage.setItem('cart', JSON.stringify(cart.value))
     }
   }
-  
+
   async function clearCart() {
     cart.value = []
-    
+
     // Save to localStorage
     if (typeof window !== 'undefined') {
       localStorage.removeItem('cart')
     }
   }
-  
+
   // Load cart from localStorage
   function loadCart() {
     if (typeof window !== 'undefined') {
@@ -466,14 +512,14 @@ export const useCatalogStore = defineStore('catalog', () => {
     hasMore,
     totalProducts,
     cart,
-    
+
     // Computed
     filteredProducts,
     activeCategoryName,
     categoriesWithProductCounts,
     availableSizes,
     sizePreset,
-    
+
     // Actions
     fetchCategories,
     fetchProducts,
@@ -489,7 +535,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     clearError,
     clearCurrentProduct,
     initialize,
-    
+
     // Cart actions
     addToCart,
     updateCartItem,

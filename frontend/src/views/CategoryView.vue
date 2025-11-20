@@ -15,9 +15,8 @@
               <span class="text-xs font-semibold uppercase tracking-wide">назад</span>
             </button>
             
-            <h1 class="text-lg font-semibold flex items-center gap-2">
-              <span>{{ category?.name || 'Категория' }}</span>
-              <span class="text-sm text-white/70">({{ totalForCategory }})</span>
+            <h1 class="text-lg font-semibold">
+              {{ category?.name || 'Категория' }}
             </h1>
             <div class="ml-auto relative">
               <button
@@ -101,6 +100,20 @@
                 :product="product"
                 @click="$router.push({ name: 'product', params: { id: product.id } })"
               />
+            </div>
+
+            <!-- Load more button -->
+            <div
+              v-if="catalogStore.hasMore && catalogStore.products.length"
+              class="flex justify-center mt-6"
+            >
+              <button
+                class="px-6 py-3 bg-brand-primary text-brand-dark rounded-full border-2 border-brand-dark font-semibold uppercase tracking-wide hover:bg-brand-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="catalogStore.isLoading"
+                @click="catalogStore.loadMoreProducts()"
+              >
+                {{ catalogStore.isLoading ? 'Загружаем...' : 'Показать ещё' }}
+              </button>
             </div>
 
             <!-- Empty state -->

@@ -175,7 +175,7 @@ const categoryProductCounts = computed(() => {
   
   const counts: Record<string, number> = {}
   for (const category of catalogStore.categories) {
-    counts[category.id] = productsToCount.filter(p => p.categoryId === category.id).length
+    counts[category.id] = productsToCount.filter(p => p.categoryId && String(p.categoryId) === String(category.id)).length
   }
   
   return counts
