@@ -1,0 +1,35 @@
+# Warp ignore file
+# Файлы и папки, которые должны игнорироваться IDE
+
+# ДЕМО ФАЙЛЫ УДАЛЕНЫ СОГЛАСНО ПРАВИЛУ: НЕ СОЗДАВАТЬ ДЕМО ВЕРСИИ
+# См. WARP.md раздел "КРИТИЧЕСКОЕ ПРАВИЛО: НЕ СОЗДАВАТЬ ДЕМО ВЕРСИИ"
+
+# Игнорировать любые файлы с "Demo" в названии
+*Demo*
+*demo*
+*/demo/*
+**/demo/**
+
+# Игнорировать демо роуты и компоненты
+**/src/components/*Demo.vue
+**/src/views/*Demo.vue
+**/src/pages/*Demo.vue
+
+# Игнорировать демо документацию
+*Demo*.md
+*DEMO*.md
+*demo*.md
+
+# Игнорировать песочницы и playground
+*playground*
+*sandbox*
+*Playground*
+*Sandbox*
+
+# Игнорировать временные и тестовые файлы для демонстрации
+*showcase*
+*Showcase*
+*example*
+*Example*
+*sample*
+*Sample*

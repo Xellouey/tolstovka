@@ -1,0 +1,42 @@
+module.exports = {
+  apps: [
+    {
+      name: 'tolstovka-server',
+      script: 'server/index.js',
+      cwd: '/var/www/tolstovka',
+      instances: 1,
+      exec_mode: 'fork',
+      watch: false,
+      max_memory_restart: '1G',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 8081,
+        DATABASE_FILE: '/var/www/tolstovka/server/data/tolsovka.db'
+      },
+      log_file: '/var/log/tolstovka/server.log',
+      out_file: '/var/log/tolstovka/server-out.log',
+      error_file: '/var/log/tolstovka/server-error.log',
+      time: true
+    },
+    {
+      name: 'tolstovka-bot',
+      script: 'server/bot.js',
+      cwd: '/var/www/tolstovka',
+      instances: 1,
+      exec_mode: 'fork',
+      watch: false,
+      max_memory_restart: '512M',
+      env: {
+        NODE_ENV: 'production',
+        BOT_TOKEN: '8156267749:AAGwz8YXD116fcmhYRjEqZDeBfMc0ozjx68',
+        BASE_URL: 'https://tolstovka39.ru',
+        WEBHOOK_DOMAIN: 'https://tolstovka39.ru',
+        DATABASE_FILE: '/var/www/tolstovka/server/data/tolsovka.db'
+      },
+      log_file: '/var/log/tolstovka/bot.log',
+      out_file: '/var/log/tolstovka/bot-out.log',
+      error_file: '/var/log/tolstovka/bot-error.log',
+      time: true
+    }
+  ]
+};

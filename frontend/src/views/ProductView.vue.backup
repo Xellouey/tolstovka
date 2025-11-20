@@ -1,0 +1,400 @@
+<template>
+<div class="min-h-screen bg-brand-primary">
+
+    <!-- Loading State -->
+    <div v-if="loading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-2 border-brand-dark border-t-transparent"></div>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="error" class="flex flex-col items-center justify-center py-16 text-center px-6">
+<ExclamationTriangleIcon class="w-12 h-12 text-brand-dark mb-4" />
+      <h2 class="text-xl font-semibold text-brand-dark mb-2">Товар не найден</h2>
+      <p class="text-brand-dark/70 mb-6">{{ error }}</p>
+      <router-link 
+        to="/"
+        class="px-4 py-2 bg-brand-dark text-white rounded-lg hover:bg-brand-dark/90 transition-colors"
+      >
+        На главную
+      </router-link>
+    </div>
+
+    <!-- Product Details -->
+    <div v-else-if="product" class="pb-24">
+      <!-- Product Gallery (Embla) -->
+<div class="relative w-full aspect-[3/4] bg-white">
+        <div 
+          class="embla overflow-hidden absolute inset-0"
+          ref="emblaRef"
+        >
+          <div class="embla__container flex h-full">
+            <div
+              v-for="(src, idx) in images"
+              :key="src + '-' + idx"
+class="embla__slide min-w-full h-full bg-white"
+            >
+              <img
+                :src="src"
+                :alt="product.title || 'Товар'"
+                class="w-full h-full object-cover cursor-pointer"
+                loading="lazy"
+                @error="handleImageError"
+                @click="openImageViewer"
+                title="Нажмите для полноэкранного просмотра"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Prev/Next controls -->
+        <button
+          v-if="images.length > 1"
+          type="button"
+class="absolute left-2 top-1/2 -translate-y-1/2 bg-brand-dark/30 hover:bg-brand-dark/50 text-white rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white"
+          @click="scrollPrev"
+          aria-label="Предыдущее изображение"
+        >
+          <ChevronLeftIcon class="w-6 h-6" />
+        </button>
+        <button
+          v-if="images.length > 1"
+          type="button"
+class="absolute right-2 top-1/2 -translate-y-1/2 bg-brand-dark/30 hover:bg-brand-dark/50 text-white rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-white"
+          @click="scrollNext"
+          aria-label="Следующее изображение"
+        >
+          <ChevronRightIcon class="w-6 h-6" />
+        </button>
+
+        <!-- Dots -->
+        <div
+          v-if="images.length > 1"
+          class="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-2"
+        >
+          <button
+            v-for="(src, idx) in images"
+            :key="'dot-' + idx"
+            class="h-2 rounded-full transition-all"
+            :style="{ width: idx === currentSlide ? '1.25rem' : '0.5rem' }"
+            :class="idx === currentSlide ? 'bg-white' : 'bg-white/60'"
+            @click="goToSlide(idx)"
+            :aria-label="`Перейти к изображению ${idx + 1}`"
+            :aria-current="idx === currentSlide ? 'true' : 'false'"
+          />
+        </div>
+
+        <!-- ARIA live region for screen readers -->
+        <div
+          aria-live="polite"
+          :aria-atomic="true"
+          style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"
+        >
+          {{ liveAnnouncement }}
+        </div>
+      </div>
+
+      <!-- Thumbnails -->
+      <div v-if="images.length > 1" class="px-4 mt-3">
+        <div class="flex gap-2 overflow-x-auto scrollbar-hide">
+          <button
+            v-for="(src, idx) in images"
+            :key="'thumb-' + idx"
+class="relative flex-shrink-0 w-14 h-18 rounded-lg overflow-hidden border focus:outline-none focus:ring-2 focus:ring-brand-dark"
+            :class="idx === currentSlide ? 'border-brand-dark ring-2 ring-brand-dark' : 'border-brand-dark/20'"
+            @click="goToSlide(idx)"
+            @keydown.enter.prevent="goToSlide(idx)"
+            @keydown.space.prevent="goToSlide(idx)"
+            :aria-label="`Показать изображение ${idx + 1}`"
+            :aria-pressed="idx === currentSlide ? 'true' : 'false'"
+            tabindex="0"
+          >
+            <img
+              :src="src"
+              :alt="product?.title || 'Товар'"
+              class="w-full h-full object-cover"
+              loading="lazy"
+              @load="markThumbLoaded(idx)"
+              @error="handleImageError"
+            />
+<div v-if="!thumbLoaded[idx]" class="absolute inset-0 bg-white/20 animate-pulse" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Product Info (text-only; gallery and thumbnails untouched) -->
+      <section
+        class="p-6 bg-white"
+        role="region"
+        aria-labelledby="product-title"
+      >
+        <!-- Heading -->
+        <header class="mb-6">
+          <h1
+            id="product-title"
+            class="font-display text-2xl font-normal text-brand-dark leading-tight"
+          >
+            {{ product?.title }}
+          </h1>
+        </header>
+
+        <!-- Category badge -->
+        <router-link
+          v-if="category"
+          :to="{ name: 'category', params: { slug: category.slug } }"
+          class="inline-flex items-center space-x-2 mb-6 px-3 py-1 bg-brand-primary border-2 border-brand-dark rounded-full font-medium uppercase tracking-wider text-sm text-brand-dark transition-all duration-200 hover:bg-brand-dark hover:text-white"
+          style="font-family: var(--font-primary);"
+          :aria-label="`Перейти в категорию: ${category.name}`"
+        >
+          <TagIcon class="w-4 h-4" />
+          <span>{{ category.name }}</span>
+        </router-link>
+
+        <!-- Description -->
+        <section v-if="product.description" aria-labelledby="desc-heading" class="mb-6">
+          <h2
+            id="desc-heading"
+            class="font-display text-base font-normal text-brand-dark uppercase tracking-wider mb-3"
+          >
+            Описание
+          </h2>
+          <div class="bg-gray-50 rounded-xl p-4 border-l-4 border-brand-primary">
+            <p class="font-primary text-base text-brand-dark leading-relaxed">
+              {{ product.description }}
+            </p>
+          </div>
+        </section>
+
+        <!-- Meta -->
+        <footer class="text-center pt-4 border-t border-gray-200">
+          <p class="font-primary text-sm text-brand-dark/60">
+            Добавлен {{ formatDate(product.createdAt) }}
+          </p>
+        </footer>
+      </section>
+    </div>
+
+    <!-- Bottom Action Bar -->
+<div v-if="product" class="fixed bottom-0 left-0 right-0 bg-brand-dark border-t-2 border-brand-primary p-4 z-20">
+      <div class="flex items-center justify-between max-w-md mx-auto">
+        <!-- Price -->
+        <div class="font-primary text-2xl font-bold text-yellow-400 tabular-nums">
+          {{ formatPrice(product.priceRub) }}
+        </div>
+        
+        <!-- Buy Button -->
+        <button
+          @click="showPurchaseModal"
+          class="inline-flex items-center justify-center space-x-2 px-6 py-3 bg-brand-primary text-brand-dark border-2 border-brand-primary rounded-xl font-bold uppercase tracking-wider transition-all duration-200 hover:shadow-lg hover:-translate-y-1 active:scale-95"
+          style="font-family: var(--font-primary); font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
+        >
+          <ShoppingCartIcon class="w-5 h-5" />
+          <span>Купить</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Purchase Modal -->
+    <PurchaseModal
+      :is-open="showModal"
+      :product="product"
+      @close="showModal = false"
+    />
+
+    <!-- Image Viewer -->
+    <ImageViewer 
+      :images="images"
+      :initial-index="currentSlide"
+      v-model:isOpen="showImageViewer"
+      @close="showImageViewer = false"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import { onBeforeRouteUpdate } from 'vue-router'
+import emblaCarouselVue from 'embla-carousel-vue'
+import { useCatalogStore } from '@/stores/catalog'
+import PurchaseModal from '@/components/PurchaseModal.vue'
+import ImageViewer from '@/components/ImageViewer.vue'
+import { 
+  ExclamationTriangleIcon,
+  TagIcon,
+  ClockIcon,
+  ShoppingCartIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
+} from '@heroicons/vue/24/outline'
+
+// Получаем id товара из props (props: true в маршруте)
+const props = defineProps<{ id: string }>()
+const catalogStore = useCatalogStore()
+
+const loading = ref(false)
+const error = ref('')
+const showModal = ref(false)
+const showImageViewer = ref(false)
+
+// Embla carousel
+const [emblaRef, emblaApi] = emblaCarouselVue(
+  { loop: true, align: 'center' }
+)
+const currentSlide = ref(0)
+
+const product = computed(() => {
+  // Предпочтительно показываем currentProduct, если id совпадает,
+  // иначе ищем в списке products
+  const cp = catalogStore.currentProduct
+  if (cp && cp.id === props.id) return cp
+  return catalogStore.products.find(p => p.id === props.id) || null
+})
+
+const category = computed(() => {
+  if (!product.value) return null
+  return catalogStore.categories.find(cat => cat.id === product.value!.categoryId) || null
+})
+
+const images = computed(() => product.value?.images ?? [])
+
+// Thumbnail skeleton load states
+const thumbLoaded = ref<boolean[]>([])
+
+function initThumbStates() {
+  thumbLoaded.value = images.value.map(() => false)
+}
+
+function markThumbLoaded(index: number) {
+  thumbLoaded.value[index] = true
+}
+
+
+
+const showPurchaseModal = () => {
+  if (!product.value) return
+  showModal.value = true
+  // Haptic feedback in Telegram
+  if (window.Telegram?.WebApp) {
+    window.Telegram.WebApp.HapticFeedback.impactOccurred('medium')
+  }
+}
+
+const openImageViewer = () => {
+  if (images.value.length > 0) {
+    showImageViewer.value = true
+    // Haptic feedback in Telegram
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('light')
+    }
+  }
+}
+
+const handleImageError = (event: Event) => {
+  const target = event.target as HTMLImageElement
+  target.src = `https://placehold.co/400x300/e5e7eb/6b7280?text=${encodeURIComponent(product.value?.title || 'Товар')}`
+}
+
+function goToSlide(index: number) {
+  emblaApi.value?.scrollTo(index)
+}
+
+function scrollPrev() {
+  emblaApi.value?.scrollPrev()
+}
+function scrollNext() {
+  emblaApi.value?.scrollNext()
+}
+
+function onSelect() {
+  const api = emblaApi.value
+  if (!api) return
+  currentSlide.value = api.selectedScrollSnap()
+}
+
+
+function formatPrice(price: number): string {
+  return `${price.toLocaleString('ru-RU')} ₽`
+}
+
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffTime = Math.abs(now.getTime() - date.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 1) return 'вчера'
+  if (diffDays < 7) return `${diffDays} дн. назад`
+  if (diffDays < 30) return `${Math.ceil(diffDays / 7)} нед. назад`
+  return date.toLocaleDateString('ru-RU')
+}
+
+const liveAnnouncement = computed(() => {
+  if (!images.value.length) return ''
+  return `Изображение ${currentSlide.value + 1} из ${images.value.length}`
+})
+
+const loadProduct = async (id: string) => {
+  loading.value = true
+  error.value = ''
+  try {
+    // Категории нужны для отображения названия категории
+    if (!catalogStore.categories.length) {
+      await catalogStore.fetchCategories()
+    }
+    
+    // Очищаем старый currentProduct если ID не совпадает
+    if (catalogStore.currentProduct && catalogStore.currentProduct.id !== id) {
+      catalogStore.clearCurrentProduct()
+    }
+    
+    // Загружаем товар
+    await catalogStore.fetchProduct(id)
+    
+    if (!catalogStore.currentProduct || catalogStore.currentProduct.id !== id) {
+      error.value = 'Товар не найден'
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Не удалось загрузить товар'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  await loadProduct(props.id)
+  initThumbStates()
+  await nextTick()
+  const api = emblaApi.value
+  if (api) {
+    api.on('select', onSelect)
+    api.on('reInit', () => { onSelect(); initThumbStates() })
+    onSelect()
+  }
+})
+
+// Отслеживаем изменения ID товара
+watch(
+  () => props.id,
+  async (newId, oldId) => {
+    if (newId !== oldId) {
+      showModal.value = false
+      await loadProduct(newId)
+      await nextTick()
+      currentSlide.value = 0
+      emblaApi.value?.scrollTo(0)
+      initThumbStates()
+    }
+  },
+  { immediate: false } // immediate: false потому что onMounted уже вызывает loadProduct
+)
+
+onBeforeRouteUpdate((to) => {
+  const id = to.params.id as string
+  showModal.value = false
+  loadProduct(id)
+  nextTick().then(() => {
+    currentSlide.value = 0
+    emblaApi.value?.scrollTo(0)
+    initThumbStates()
+  })
+})
+</script>

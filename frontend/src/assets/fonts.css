@@ -1,0 +1,369 @@
+/**
+ * TOLSTOVKA Typography System
+ * Фирменный шрифт бренда - Muller от Fontfabric
+ */
+
+/* MULLER - Единый фирменный шрифт для всего сайта */
+
+/* Hairline - 100 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerHairline.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerHairlineItalic.otf') format('opentype');
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Thin - 200 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerThin.otf') format('opentype');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerThinItalic.otf') format('opentype');
+  font-weight: 200;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* UltraLight - 250 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerUltraLight.otf') format('opentype');
+  font-weight: 250;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerUltraLightItalic.otf') format('opentype');
+  font-weight: 250;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Light - 300 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerLight.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerLightItalic.otf') format('opentype');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Regular - 400 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerRegular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerRegularItalic.otf') format('opentype');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Medium - 500 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerMedium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerMediumItalic.otf') format('opentype');
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Bold - 700 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerBold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerBoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ExtraBold - 800 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerExtraBold.otf') format('opentype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerExtraBoldItalic.otf') format('opentype');
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Black - 900 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerBlack.otf') format('opentype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerBlackItalic.otf') format('opentype');
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Heavy - 950 */
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerHeavy.otf') format('opentype');
+  font-weight: 950;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Muller';
+  src: url('/fonts/Fontfabric - MullerHeavyItalic.otf') format('opentype');
+  font-weight: 950;
+  font-style: italic;
+  font-display: swap;
+}
+
+/**
+ * Typography Scale для TOLSTOVKA
+ */
+:root {
+  /* Основные шрифты - используем только Muller */
+  --font-primary: 'Muller', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Muller', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-accent: 'Muller', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  /* Размеры для mobile-first */
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 1.875rem;   /* 30px */
+  --text-4xl: 2.25rem;    /* 36px */
+  
+  /* Line heights для читаемости */
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  
+  /* Letter spacing для uppercase */
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
+  --tracking-widest: 0.1em;
+}
+
+/**
+ * Utility classes для типографики
+ */
+
+/* Основной текст */
+.text-primary {
+  font-family: var(--font-primary);
+  font-weight: 400;
+}
+
+.text-primary-medium {
+  font-family: var(--font-primary);
+  font-weight: 500;
+}
+
+.text-primary-bold {
+  font-family: var(--font-primary);
+  font-weight: 700;
+}
+
+/* Display текст (заголовки, названия товаров) - используем Muller Bold/Black */
+.text-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+}
+
+.text-display-bold {
+  font-family: var(--font-display);
+  font-weight: 900;
+  line-height: var(--leading-tight);
+}
+
+/* Акцентный текст (логотип, кнопки) - используем Muller ExtraBold */
+.text-accent {
+  font-family: var(--font-accent);
+  font-weight: 800;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Специальные стили для streetwear */
+.text-uppercase-spaced {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  font-weight: 700;
+}
+
+.text-price {
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Оптимизация рендеринга для мобильных */
+.font-smooth {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fallback для медленного интернета */
+.font-loading {
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: font-family 0.1s ease;
+}
+
+/* Progressive font loading strategy */
+@supports (font-display: swap) {
+  @font-face {
+    font-family: 'Muller-Fallback';
+    src: local('Arial'), local('Helvetica');
+    font-display: block;
+    size-adjust: 105%; /* Adjust to match Muller metrics */
+  }
+}
+
+/* Dark mode optimization for OLED screens */
+@media (prefers-color-scheme: dark) {
+  .font-smooth {
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
+}
+
+/* High DPI screens optimization */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .text-accent {
+    letter-spacing: calc(var(--tracking-wide) * 0.8);
+  }
+  
+  .product-price {
+    font-weight: 600;
+  }
+}
+
+/* TOLSTOVKA Button System */
+.btn-tolstovka {
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  background: #ffc81a;
+  color: #383b3d;
+  border: 2px solid #383b3d;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-block;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-tolstovka:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-tolstovka:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.btn-tolstovka-secondary {
+  background: #383b3d;
+  color: #ffc81a;
+  border: 2px solid #ffc81a;
+}
+
+.btn-tolstovka-ghost {
+  background: transparent;
+  color: #383b3d;
+  border: 2px solid #383b3d;
+}
+
+.btn-tolstovka-ghost:hover {
+  background: #383b3d;
+  color: #ffc81a;
+}
+
+/* Container system like test page */
+.tolstovka-container {
+  max-width: 400px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Section spacing */
+.tolstovka-section {
+  margin: 20px 0;
+}
+
+.tolstovka-section:first-child {
+  margin-top: 0;
+}
+
+.tolstovka-section:last-child {
+  margin-bottom: 0;
+}

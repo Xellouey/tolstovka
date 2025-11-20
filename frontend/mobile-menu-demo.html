@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Демонстрация улучшенного меню TOLSTOVKA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .touch-manipulation { touch-action: manipulation; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Контейнер демо -->
+    <div class="p-4">
+        <h1 class="text-2xl font-bold mb-6 text-center">Демонстрация улучшенного гамбургер-меню</h1>
+        
+        <!-- Кнопка для открытия меню -->
+        <div class="flex justify-center mb-8">
+            <button 
+                id="openMenuBtn"
+                class="p-3 rounded-full bg-gray-800 text-white shadow-lg hover:bg-gray-700 transition-colors"
+                aria-label="Открыть меню"
+            >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Сравнение: старое vs новое -->
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- Старое меню -->
+            <div class="bg-white rounded-lg p-4 shadow-lg">
+                <h3 class="text-lg font-semibold mb-4 text-center">Было (старое)</h3>
+                <div class="bg-white rounded-xl shadow-lg p-2 max-w-sm mx-auto">
+                    <div class="flex items-center justify-between px-2 py-1 border-b mb-1">
+                        <span class="text-sm font-medium text-gray-700">Разделы</span>
+                        <button class="p-1 text-gray-500">×</button>
+                    </div>
+                    <div class="space-y-0">
+                        <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                            <span class="w-5 h-5">🏠</span>
+                            <span class="truncate">Обзор</span>
+                        </button>
+                        <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm bg-blue-100 text-blue-900">
+                            <span class="w-5 h-5">📄</span>
+                            <span class="truncate">Баннеры</span>
+                        </button>
+                        <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                            <span class="w-5 h-5">📂</span>
+                            <span class="truncate">Категории</span>
+                        </button>
+                        <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                            <span class="w-5 h-5">📦</span>
+                            <span class="truncate">Товары</span>
+                        </button>
+                        <button class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100">
+                            <span class="w-5 h-5">⚙️</span>
+                            <span class="truncate">Настройки</span>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-sm text-red-600 text-center mt-4">❌ Кнопки слишком близко<br>❌ Мелкий текст<br>❌ Плохо нажимается</p>
+            </div>
+
+            <!-- Новое меню -->
+            <div class="bg-white rounded-lg p-4 shadow-lg">
+                <h3 class="text-lg font-semibold mb-4 text-center">Стало (новое)</h3>
+                <div class="bg-white rounded-xl shadow-lg p-3 max-w-sm mx-auto">
+                    <div class="flex items-center justify-between px-3 py-3 border-b mb-3">
+                        <span class="text-base font-semibold text-gray-800">Разделы</span>
+                        <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">×</button>
+                    </div>
+                    <div class="space-y-2">
+                        <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation text-gray-700 hover:bg-gray-50 hover:shadow-sm">
+                            <span class="w-6 h-6 flex-shrink-0">🏠</span>
+                            <span class="truncate text-left">Обзор</span>
+                        </button>
+                        <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation bg-blue-100 text-blue-900 border border-blue-200">
+                            <span class="w-6 h-6 flex-shrink-0">📄</span>
+                            <span class="truncate text-left">Баннеры</span>
+                        </button>
+                        <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation text-gray-700 hover:bg-gray-50 hover:shadow-sm">
+                            <span class="w-6 h-6 flex-shrink-0">📂</span>
+                            <span class="truncate text-left">Категории</span>
+                        </button>
+                        <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation text-gray-700 hover:bg-gray-50 hover:shadow-sm">
+                            <span class="w-6 h-6 flex-shrink-0">📦</span>
+                            <span class="truncate text-left">Товары</span>
+                        </button>
+                        <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation text-gray-700 hover:bg-gray-50 hover:shadow-sm">
+                            <span class="w-6 h-6 flex-shrink-0">⚙️</span>
+                            <span class="truncate text-left">Настройки</span>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-sm text-green-600 text-center mt-4">✅ Удобные отступы<br>✅ Четкий текст<br>✅ Легко нажимать</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мобильная версия (overlay) -->
+    <div id="mobileMenu" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black/40" onclick="closeMobileMenu()"></div>
+        <div class="absolute bottom-4 inset-x-4 bg-white rounded-xl shadow-lg p-3">
+            <div class="flex items-center justify-between px-3 py-3 border-b mb-3">
+                <span class="text-base font-semibold text-gray-800">Разделы</span>
+                <button class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" onclick="closeMobileMenu()">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="max-h-[60vh] overflow-auto space-y-2">
+                <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation text-gray-700 hover:bg-gray-50 hover:shadow-sm active:bg-gray-100" onclick="selectMenuItem('overview')">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path></svg>
+                    <span class="truncate text-left">Обзор</span>
+                </button>
+                <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation bg-blue-100 text-blue-900 border border-blue-200" onclick="selectMenuItem('banners')">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="truncate text-left">Баннеры</span>
+                </button>
+                <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation text-gray-700 hover:bg-gray-50 hover:shadow-sm active:bg-gray-100" onclick="selectMenuItem('categories')">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <span class="truncate text-left">Категории</span>
+                </button>
+                <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation text-gray-700 hover:bg-gray-50 hover:shadow-sm active:bg-gray-100" onclick="selectMenuItem('products')">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                    <span class="truncate text-left">Товары</span>
+                </button>
+                <button class="w-full flex items-center gap-4 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 touch-manipulation text-gray-700 hover:bg-gray-50 hover:shadow-sm active:bg-gray-100" onclick="selectMenuItem('settings')">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span class="truncate text-left">Настройки</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openMobileMenu() {
+            document.getElementById('mobileMenu').classList.remove('hidden');
+        }
+        
+        function closeMobileMenu() {
+            document.getElementById('mobileMenu').classList.add('hidden');
+        }
+        
+        function selectMenuItem(item) {
+            alert(`Выбран пункт: ${item}`);
+            closeMobileMenu();
+        }
+        
+        document.getElementById('openMenuBtn').addEventListener('click', openMobileMenu);
+        
+        // Закрытие по Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeMobileMenu();
+            }
+        });
+    </script>
+
+</body>
+</html>

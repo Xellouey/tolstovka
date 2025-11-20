@@ -1,0 +1,14 @@
+@import './fonts.css';
+@import './base.css';
+
+/* Global typography setup */
+html {
+  font-family: var(--font-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-primary);
+  line-height: var(--leading-normal);
+}

@@ -1,0 +1,377 @@
+#cloud-config
+# TOLSTOVKA VPS Cloud-Init Configuration
+# Автоматическая настройка Ubuntu VPS для деплоя Telegram Mini App
+
+# Базовые настройки
+hostname: tolstovka-vps
+fqdn: tolstovka-vps.local
+timezone: Europe/Moscow
+
+# Создание пользователей
+users:
+  - name: tolstovka
+    gecos: TOLSTOVKA Application User
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo,docker
+    shell: /bin/bash
+    lock_passwd: false
+    # SSH ключ будет добавлен при создании VPS
+    ssh_authorized_keys:
+      - ssh-rsa PLACEHOLDER_SSH_KEY
+
+# Обновление системы
+package_update: true
+package_upgrade: true
+
+# Установка пакетов
+packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - nano
+  - vim
+  - unzip
+  - software-properties-common
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+  - sqlite3
+  - build-essential
+  - fail2ban
+  - ufw
+  - logrotate
+
+# Команды для выполнения
+runcmd:
+  # Настройка файрвола
+  - ufw --force enable
+  - ufw allow ssh
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  
+  # Настройка fail2ban
+  - systemctl enable fail2ban
+  - systemctl start fail2ban
+  
+  # Установка Node.js 20 LTS
+  - curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+  - apt-get install -y nodejs
+  
+  # Установка PM2 глобально
+  - npm install -g pm2
+  - pm2 startup
+  - env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u tolstovka --hp /home/tolstovka
+  
+  # Создание директорий проекта
+  - mkdir -p /var/www/tolstovka
+  - mkdir -p /var/www/tolstovka/uploads
+  - mkdir -p /var/www/tolstovka/uploads/temp
+  - mkdir -p /var/www/tolstovka/uploads/banners
+  - mkdir -p /var/www/tolstovka/uploads/products
+  - mkdir -p /var/log/tolstovka
+  
+  # Настройка прав доступа
+  - chown -R tolstovka:tolstovka /var/www/tolstovka
+  - chown -R tolstovka:tolstovka /var/log/tolstovka
+  - chmod -R 755 /var/www/tolstovka/uploads
+
+# Файлы конфигурации
+write_files:
+  # Nginx конфигурация для TOLSTOVKA
+  - path: /etc/nginx/sites-available/tolstovka
+    content: |
+      server {
+          listen 80;
+          server_name tolstovka39.ru www.tolstovka39.ru;
+          
+          # Redirect HTTP to HTTPS
+          return 301 https://$server_name$request_uri;
+      }
+      
+      server {
+          listen 443 ssl http2;
+          server_name tolstovka39.ru www.tolstovka39.ru;
+          
+          # SSL configuration (настроится позже через SSH)
+          # ssl_certificate /etc/letsencrypt/live/tolstovka39.ru/fullchain.pem;
+          # ssl_certificate_key /etc/letsencrypt/live/tolstovka39.ru/privkey.pem;
+          # include /etc/letsencrypt/options-ssl-nginx.conf;
+          # ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+          
+          # Временно используем самоподписанный сертификат
+          ssl_certificate /etc/ssl/certs/ssl-cert-snakeoil.pem;
+          ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+          
+          # Security headers
+          add_header X-Frame-Options "SAMEORIGIN" always;
+          add_header X-XSS-Protection "1; mode=block" always;
+          add_header X-Content-Type-Options "nosniff" always;
+          add_header Referrer-Policy "no-referrer-when-downgrade" always;
+          add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+          
+          # Gzip compression
+          gzip on;
+          gzip_vary on;
+          gzip_min_length 1024;
+          gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+          
+          # Frontend static files
+          location / {
+              root /var/www/tolstovka/frontend/dist;
+              try_files $uri $uri/ /index.html;
+              
+              # Cache static assets
+              location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                  expires 1y;
+                  add_header Cache-Control "public, immutable";
+              }
+          }
+          
+          # API proxy to Express backend
+          location /api {
+              proxy_pass http://127.0.0.1:8081;
+              proxy_http_version 1.1;
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection 'upgrade';
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_cache_bypass $http_upgrade;
+              
+              # Увеличиваем лимиты для загрузки файлов
+              client_max_body_size 50M;
+              proxy_read_timeout 60s;
+              proxy_connect_timeout 60s;
+              proxy_send_timeout 60s;
+          }
+          
+          # Uploads static files
+          location /uploads {
+              root /var/www/tolstovka;
+              expires 1y;
+              add_header Cache-Control "public";
+              
+              # CORS headers для изображений
+              add_header Access-Control-Allow-Origin "*";
+              add_header Access-Control-Allow-Methods "GET, OPTIONS";
+              add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept";
+              
+              # Handle OPTIONS requests
+              if ($request_method = 'OPTIONS') {
+                  add_header Access-Control-Allow-Origin "*";
+                  add_header Access-Control-Allow-Methods "GET, OPTIONS";
+                  add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept";
+                  add_header Content-Length 0;
+                  add_header Content-Type text/plain;
+                  return 204;
+              }
+          }
+          
+          # Logs
+          access_log /var/log/nginx/tolstovka.access.log;
+          error_log /var/log/nginx/tolstovka.error.log;
+      }
+    owner: root:root
+    permissions: '0644'
+  
+  # PM2 ecosystem file для TOLSTOVKA
+  - path: /var/www/tolstovka/ecosystem.config.cjs
+    content: |
+      module.exports = {
+        apps: [
+          {
+            name: 'tolstovka-server',
+            script: 'server/index.js',
+            cwd: '/var/www/tolstovka',
+            instances: 1,
+            exec_mode: 'fork',
+            watch: false,
+            max_memory_restart: '1G',
+            env: {
+              NODE_ENV: 'production',
+              PORT: 8081,
+              DATABASE_FILE: '/var/www/tolstovka/server/data/tolsovka.db'
+            },
+            log_file: '/var/log/tolstovka/server.log',
+            out_file: '/var/log/tolstovka/server-out.log',
+            error_file: '/var/log/tolstovka/server-error.log',
+            time: true
+          },
+          {
+            name: 'tolstovka-bot',
+            script: 'server/bot.js',
+            cwd: '/var/www/tolstovka',
+            instances: 1,
+            exec_mode: 'fork',
+            watch: false,
+            max_memory_restart: '512M',
+            env: {
+              NODE_ENV: 'production',
+              BOT_TOKEN: '8419516024:AAElx1sIViW-nsjUXBxhsT8FKAvjptsLbPQ',
+              WEBHOOK_DOMAIN: 'https://tolstovka39.ru',
+              DATABASE_FILE: '/var/www/tolstovka/server/data/tolsovka.db'
+            },
+            log_file: '/var/log/tolstovka/bot.log',
+            out_file: '/var/log/tolstovka/bot-out.log',
+            error_file: '/var/log/tolstovka/bot-error.log',
+            time: true
+          }
+        ]
+      };
+    owner: tolstovka:tolstovka
+    permissions: '0644'
+  
+  # Переменные окружения для TOLSTOVKA
+  - path: /var/www/tolstovka/.env
+    content: |
+      # TOLSTOVKA Production Environment
+      NODE_ENV=production
+      PORT=8081
+      
+      # Database
+      DATABASE_FILE=/var/www/tolstovka/server/data/tolsovka.db
+      
+      # Telegram Bot (заменить на реальные значения)
+      BOT_TOKEN=8419516024:AAElx1sIViW-nsjUXBxhsT8FKAvjptsLbPQ
+      WEBHOOK_DOMAIN=https://tolstovka39.ru
+      
+      # JWT Secret (сгенерировать надёжный)
+      JWT_SECRET=your-super-secure-jwt-secret-key-here
+      
+      # Admin credentials (изменить в продакшене!)
+      ADMIN_USERNAME=admin
+      ADMIN_PASSWORD_HASH=$2b$10$your-bcrypt-hash-here
+      
+      # Upload settings
+      UPLOAD_DIR=/var/www/tolstovka/uploads
+      MAX_FILE_SIZE=50485760
+      
+      # CORS settings
+      CORS_ORIGIN=https://tolstovka39.ru
+      
+      # Logging
+      LOG_LEVEL=info
+      LOG_FILE=/var/log/tolstovka/app.log
+    owner: tolstovka:tolstovka
+    permissions: '0600'
+  
+  # Скрипт деплоя
+  - path: /var/www/tolstovka/deploy.sh
+    content: |
+      #!/bin/bash
+      # TOLSTOVKA Deploy Script
+      
+      set -e
+      
+      echo "🚀 Starting TOLSTOVKA deployment..."
+      
+      # Переходим в директорию проекта
+      cd /var/www/tolstovka
+      
+      # Останавливаем текущие процессы
+      echo "⏹️  Stopping current processes..."
+      pm2 stop ecosystem.config.cjs || true
+      
+      # Бэкап базы данных
+      echo "💾 Creating database backup..."
+      if [ -f "server/data/tolsovka.db" ]; then
+          cp server/data/tolsovka.db "server/data/tolsovka.db.backup.$(date +%Y%m%d_%H%M%S)"
+      fi
+      
+      # Обновляем код из Git
+      echo "📥 Pulling latest changes..."
+      git pull origin main || git pull origin master
+      
+      # Устанавливаем зависимости
+      echo "📦 Installing dependencies..."
+      npm install --production
+      cd frontend && npm install && cd ..
+      cd server && npm install && cd ..
+      
+      # Собираем frontend
+      echo "🔨 Building frontend..."
+      cd frontend && npm run build && cd ..
+      
+      # Запускаем процессы
+      echo "▶️  Starting processes..."
+      pm2 start ecosystem.config.cjs
+      pm2 save
+      
+      echo "✅ Deployment completed successfully!"
+      echo "📊 Process status:"
+      pm2 status
+    owner: tolstovka:tolstovka
+    permissions: '0755'
+  
+  # Logrotate конфигурация
+  - path: /etc/logrotate.d/tolstovka
+    content: |
+      /var/log/tolstovka/*.log {
+          daily
+          missingok
+          rotate 52
+          compress
+          delaycompress
+          notifempty
+          create 644 tolstovka tolstovka
+          postrotate
+              pm2 reloadLogs
+          endscript
+      }
+    owner: root:root
+    permissions: '0644'
+
+# Финальные команды после создания файлов
+runcmd:
+  # Активация Nginx сайта
+  - ln -sf /etc/nginx/sites-available/tolstovka /etc/nginx/sites-enabled/
+  - rm -f /etc/nginx/sites-enabled/default
+  - nginx -t
+  - systemctl reload nginx
+  
+  # SSL сертификаты настроим потом через SSH
+  # - certbot --nginx -d tolstovka39.ru -d www.tolstovka39.ru --non-interactive --agree-tos --email YOUR_EMAIL_HERE --redirect
+  
+  # Настройка автообновления сертификатов
+  - systemctl enable certbot.timer
+  - systemctl start certbot.timer
+  
+  # Код будем загружать потом через SSH
+  # Создаем placeholder файлы для тестирования
+  - echo '<!DOCTYPE html><html><head><title>TOLSTOVKA Setup</title></head><body><h1>🚀 TOLSTOVKA VPS Ready!</h1><p>SSH подключись и загрузи код проекта</p></body></html>' > /var/www/tolstovka/index.html
+  
+  # Финальная настройка системы
+  - systemctl enable nginx
+  - systemctl start nginx
+
+# Сообщение о завершении
+final_message: |
+  🎉 TOLSTOVKA VPS setup completed!
+  
+  Next steps:
+  1. SSH to your server: ssh tolstovka@YOUR_VPS_IP
+  2. Edit environment variables: nano /var/www/tolstovka/.env
+  3. Set your Telegram bot token and other secrets
+  4. Update Git repository URL in deploy script
+  5. Run deployment: /var/www/tolstovka/deploy.sh
+  
+  🔧 Management commands:
+  - pm2 status          # Check processes
+  - pm2 logs            # View logs
+  - pm2 restart all     # Restart services
+  - nginx -t            # Test Nginx config
+  - certbot renew       # Renew SSL certificates
+  
+  🌐 Your app will be available at: https://tolstovka39.ru
+  
+  Remember to:
+  - Change default passwords in /var/www/tolstovka/.env
+  - Set up proper JWT secrets
+  - Configure your Telegram bot token
+  - Update Git repository URL
