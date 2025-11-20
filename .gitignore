@@ -13,17 +13,6 @@ package-lock.json.backup
 # Vercel
 .vercel
 
-# Uploads
-uploads/**/*
-!uploads/.gitkeep
-!uploads/demo/
-!uploads/demo/.gitkeep
-
-# SQLite
-*.db
-*.db-shm
-*.db-wal
-
 # Admin config
 server/data/admin.json
 
